@@ -3,39 +3,35 @@ import { db } from "@/lib/prisma";
 
 export async function GET() {
   const errors: string[] = [];
+  const info: Record<string, unknown> = {};
 
-  // Check AUTH_SECRET
-  if (!process.env.AUTH_SECRET) errors.push("AUTH_SECRET no está configurado");
-  if (!process.env.AUTH_GOOGLE_ID) errors.push("AUTH_GOOGLE_ID no está configurado");
-  if (!process.env.AUTH_GOOGLE_SECRET) errors.push("AUTH_GOOGLE_SECRET no está configurado");
-  if (!process.env.DATABASE_URL) errors.push("DATABASE_URL no está configurado");
-
-  // Check DB connection
   try {
     await db.$connect();
     const userCount = await db.user.count();
-    await db.$disconnect();
+    info.dbConnected = true;
+    info.userCount = userCount;
   } catch (e) {
-    errors.push(`Error conectando a BD: ${e instanceof Error ? e.message : "unknown"}`);
+    errors.push(`DB: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  // Check session
   try {
     const session = await auth();
-    return Response.json({
-      status: errors.length === 0 ? "ok" : "issues",
-      errors,
-      hasSession: !!session,
-      env: {
-        hasSecret: !!process.env.AUTH_SECRET,
-        hasGoogleId: !!process.env.AUTH_GOOGLE_ID,
-        hasGoogleSecret: !!process.env.AUTH_GOOGLE_SECRET,
-        hasDbUrl: !!process.env.DATABASE_URL,
-        appUrl: process.env.NEXT_PUBLIC_APP_URL,
-      },
-    });
+    info.sessionExists = !!session;
   } catch (e) {
-    errors.push(`Error en auth(): ${e instanceof Error ? e.message : "unknown"}`);
-    return Response.json({ status: "error", errors });
+    errors.push(`Auth: ${e instanceof Error ? e.message : String(e)}`);
   }
+
+  return Response.json({
+    status: errors.length === 0 ? "ok" : "error",
+    errors,
+    info,
+    env: {
+      AUTH_SECRET: !!process.env.AUTH_SECRET,
+      AUTH_GOOGLE_ID: !!process.env.AUTH_GOOGLE_ID,
+      AUTH_GOOGLE_SECRET: !!process.env.AUTH_GOOGLE_SECRET,
+      DATABASE_URL: !!process.env.DATABASE_URL,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NODE_ENV: process.env.NODE_ENV,
+    },
+  });
 }

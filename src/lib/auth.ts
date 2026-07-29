@@ -6,6 +6,7 @@ import { db } from "./prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
+  secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(db),
   providers: [
     Google({
@@ -42,6 +43,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: "/login",
+  },
+  logger: {
+    error(code, ...message) {
+      console.error("AUTH_ERROR:", code, ...message);
+    },
   },
 });
 
