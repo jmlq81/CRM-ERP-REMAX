@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -25,7 +25,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   default: "Error al iniciar sesión. Intenta de nuevo.",
 };
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
   const errorMessage = errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.default) : null;
@@ -39,6 +39,89 @@ export default function LoginPage() {
   };
 
   return (
+    <div className="flex w-full items-center justify-center bg-white lg:w-1/2">
+      <div className="w-full max-w-md space-y-8 p-8">
+        <div className="text-center lg:text-left">
+          <h2 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h2>
+          <p className="mt-2 text-gray-600">Bienvenido de vuelta</p>
+        </div>
+
+        {errorMessage && (
+          <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+            <p className="text-sm text-red-700">{errorMessage}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleGoogleLogin}
+          disabled={googleLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-gray-200 px-4 py-3 font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50"
+        >
+          {googleLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <GoogleIcon className="h-5 w-5" />
+          )}
+          <span>{googleLoading ? "Conectando..." : "Continuar con Google"}</span>
+        </button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-4 text-gray-400">o</span>
+          </div>
+        </div>
+
+        <form className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              placeholder="ejemplo@correo.com"
+              className="mt-1.5 block w-full rounded-lg border border-gray-300 px-4 py-3 transition-all placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              className="mt-1.5 block w-full rounded-lg border border-gray-300 px-4 py-3 transition-all placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50"
+          >
+            {loading ? "Ingresando..." : "Iniciar Sesión"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-gray-500">
+          ¿No tienes cuenta?{" "}
+          <button className="font-semibold text-red-600 hover:text-red-500 transition-colors">
+            Regístrate aquí
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-screen">
       <div className="hidden w-1/2 items-center justify-center bg-gradient-to-br from-red-600 to-red-800 lg:flex">
         <div className="text-center text-white">
@@ -47,85 +130,9 @@ export default function LoginPage() {
           <p className="mt-2 text-red-100">Gestión inmobiliaria inteligente</p>
         </div>
       </div>
-
-      <div className="flex w-full items-center justify-center bg-white lg:w-1/2">
-        <div className="w-full max-w-md space-y-8 p-8">
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h2>
-            <p className="mt-2 text-gray-600">Bienvenido de vuelta</p>
-          </div>
-
-          {errorMessage && (
-            <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
-              <p className="text-sm text-red-700">{errorMessage}</p>
-            </div>
-          )}
-
-          <button
-            onClick={handleGoogleLogin}
-            disabled={googleLoading}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border-2 border-gray-200 px-4 py-3 font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50"
-          >
-            {googleLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <GoogleIcon className="h-5 w-5" />
-            )}
-            <span>{googleLoading ? "Conectando..." : "Continuar con Google"}</span>
-          </button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-4 text-gray-400">o</span>
-            </div>
-          </div>
-
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                placeholder="ejemplo@correo.com"
-                className="mt-1.5 block w-full rounded-lg border border-gray-300 px-4 py-3 transition-all placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="mt-1.5 block w-full rounded-lg border border-gray-300 px-4 py-3 transition-all placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm disabled:opacity-50"
-            >
-              {loading ? "Ingresando..." : "Iniciar Sesión"}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500">
-            ¿No tienes cuenta?{" "}
-            <button className="font-semibold text-red-600 hover:text-red-500 transition-colors">
-              Regístrate aquí
-            </button>
-          </p>
-        </div>
-      </div>
+      <Suspense fallback={<div className="flex w-1/2 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }

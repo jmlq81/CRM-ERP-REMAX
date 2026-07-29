@@ -1,8 +1,9 @@
+import { type NextRequest } from "next/server";
 import { handlers } from "@/lib/auth";
 
 export const GET = handlers.GET;
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     return await handlers.POST(request);
   } catch (error) {
