@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { Home, Loader2 } from "lucide-react";
+import { Home, Loader2, AlertCircle } from "lucide-react";
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -16,7 +17,19 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+const ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked: "Este correo ya está vinculado a otro método de inicio de sesión.",
+  OAuthCallbackError: "Error al autenticar con Google. Verifica que la URI de redirección en Google Cloud Console sea: https://crm-erp-remax-six.vercel.app/api/auth/callback/google",
+  AccessDenied: "Acceso denegado.",
+  CredentialsSignin: "Correo o contraseña incorrectos.",
+  default: "Error al iniciar sesión. Intenta de nuevo.",
+};
+
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
+  const errorMessage = errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.default) : null;
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -41,6 +54,13 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h2>
             <p className="mt-2 text-gray-600">Bienvenido de vuelta</p>
           </div>
+
+          {errorMessage && (
+            <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+              <p className="text-sm text-red-700">{errorMessage}</p>
+            </div>
+          )}
 
           <button
             onClick={handleGoogleLogin}
