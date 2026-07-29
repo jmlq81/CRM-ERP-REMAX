@@ -19,16 +19,19 @@ function GoogleIcon({ className }: { className?: string }) {
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthAccountNotLinked: "Este correo ya está vinculado a otro método de inicio de sesión.",
-  OAuthCallbackError: "Error al autenticar con Google. Verifica que la URI de redirección en Google Cloud Console sea: https://crm-erp-remax-six.vercel.app/api/auth/callback/google",
+  OAuthCallback: "Error al autenticar con Google. Verifica que la URI de redirección en Google Cloud Console sea exactamente: https://crm-erp-remax-six.vercel.app/api/auth/callback/google",
+  OAuthSignin: "Error al iniciar sesión con Google. Intenta de nuevo.",
+  OAuthCreateAccount: "No se pudo crear tu cuenta. Intenta de nuevo.",
   AccessDenied: "Acceso denegado.",
   CredentialsSignin: "Correo o contraseña incorrectos.",
-  default: "Error al iniciar sesión. Intenta de nuevo.",
+  Configuration: "Error de configuración del servidor.",
 };
+const DEFAULT_ERROR = "Error al iniciar sesión. Intenta de nuevo.";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
-  const errorMessage = errorParam ? (ERROR_MESSAGES[errorParam] ?? ERROR_MESSAGES.default) : null;
+  const errorMessage = errorParam ? (ERROR_MESSAGES[errorParam] ?? DEFAULT_ERROR) : null;
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -46,10 +49,13 @@ function LoginForm() {
           <p className="mt-2 text-gray-600">Bienvenido de vuelta</p>
         </div>
 
-        {errorMessage && (
+        {errorParam && (
           <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
-            <p className="text-sm text-red-700">{errorMessage}</p>
+            <div>
+              <p className="text-sm text-red-700">{errorMessage}</p>
+              <p className="mt-1 text-xs text-red-500">Código: {errorParam}</p>
+            </div>
           </div>
         )}
 
