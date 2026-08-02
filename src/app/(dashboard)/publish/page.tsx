@@ -1,22 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
 import { Globe, MessageCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import Link from "next/link";
+import ConnectFacebook from "@/components/ConnectFacebook";
+
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  );
+}
+
+interface ConnectedAccount {
+  id: string;
+  pageId: string;
+  pageName: string;
+  tokenExpiresAt: string | null;
+}
 
 export default function PublishPage() {
-  const [pageId, setPageId] = useState("");
-  const [accessToken, setAccessToken] = useState("");
   const [selectedProperty, setSelectedProperty] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
 
   const { data: properties } = trpc.property.list.useQuery({});
 
+  const loadAccounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/facebook/accounts");
+      const data = await res.json();
+      setAccounts(data.accounts || []);
+    } catch {
+      setAccounts([]);
+    }
+    setLoadingAccounts(false);
+  }, []);
+
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
   const handlePublish = async () => {
-    if (!selectedProperty || !pageId || !accessToken) return;
+    if (!selectedProperty || !selectedAccount) return;
     setPublishing(true);
     setResult(null);
 
@@ -26,8 +57,7 @@ export default function PublishPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           propertyId: selectedProperty,
-          pageId,
-          accessToken,
+          facebookAccountId: selectedAccount,
         }),
       });
       const data = await res.json();
@@ -46,10 +76,18 @@ export default function PublishPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Publicar</h1>
-        <p className="text-gray-600">Publica tus propiedades en Facebook Marketplace</p>
+        <p className="text-gray-600">Publica tus propiedades en Facebook</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+            <FacebookIcon className="h-5 w-5 text-blue-600" />
+            Páginas conectadas
+          </h2>
+          <ConnectFacebook accounts={accounts} onAccountsChange={loadAccounts} />
+        </div>
+
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
             <MessageCircle className="h-5 w-5 text-blue-600" />
@@ -77,47 +115,28 @@ export default function PublishPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Facebook Page ID
+                Página de Facebook
               </label>
-              <input
-                type="text"
-                value={pageId}
-                onChange={(e) => setPageId(e.target.value)}
-                placeholder="Ej: 123456789012345"
-                className="mt-1 block w-full rounded-lg border px-4 py-2 focus:border-red-500 focus:outline-none"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Lo encuentras en tu página de Facebook → Acerca de → ID de la página
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Token de Acceso
-              </label>
-              <input
-                type="text"
-                value={accessToken}
-                onChange={(e) => setAccessToken(e.target.value)}
-                placeholder="EAAD..."
-                className="mt-1 block w-full rounded-lg border px-4 py-2 focus:border-red-500 focus:outline-none"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Ve al{" "}
-                <a
-                  href="https://developers.facebook.com/tools/explorer/"
-                  target="_blank"
-                  className="text-red-600 hover:underline"
-                >
-                  Graph API Explorer
-                </a>
-                , selecciona tu app y genera un token con permiso pages_manage_posts
-              </p>
+              <select
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                disabled={loadingAccounts || accounts.length === 0}
+                className="mt-1 block w-full rounded-lg border px-4 py-2 focus:border-red-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                <option value="">
+                  {loadingAccounts ? "Cargando..." : accounts.length === 0 ? "Primero conecta tu página" : "Seleccionar página"}
+                </option>
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.pageName}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button
               onClick={handlePublish}
-              disabled={publishing || !selectedProperty || !pageId || !accessToken}
+              disabled={publishing || !selectedProperty || !selectedAccount}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {publishing ? (
@@ -152,15 +171,6 @@ export default function PublishPage() {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Historial de Publicaciones
-          </h2>
-          <p className="text-sm text-gray-500">
-            Acá verás el historial de propiedades publicadas
-          </p>
         </div>
       </div>
     </div>

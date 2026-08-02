@@ -9,7 +9,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { propertyId, pageId, accessToken } = await req.json();
+    const { propertyId, facebookAccountId } = await req.json();
+
+    if (!propertyId) {
+      return Response.json({ error: "propertyId is required" }, { status: 400 });
+    }
 
     const property = await db.property.findFirst({
       where: { id: propertyId, userId: session.user.id },
@@ -20,7 +24,26 @@ export async function POST(req: Request) {
       return Response.json({ error: "Property not found" }, { status: 404 });
     }
 
-    const message = `${property.title}\n\n${property.description || ""}\n\nPrecio: S/ ${property.price}\nUbicación: ${property.city}, ${property.address}\n${property.bedrooms ? `${property.bedrooms} hab · ` : ""}${property.bathrooms ? `${property.bathrooms} baños` : ""}`;
+    let pageId: string;
+    let accessToken: string;
+
+    if (facebookAccountId) {
+      const account = await db.facebookAccount.findFirst({
+        where: { id: facebookAccountId, userId: session.user.id },
+      });
+      if (!account) {
+        return Response.json({ error: "Facebook account not found" }, { status: 404 });
+      }
+      pageId = account.pageId;
+      accessToken = account.accessToken;
+    } else {
+      return Response.json(
+        { error: "facebookAccountId is required. Conecta tu página de Facebook primero." },
+        { status: 400 }
+      );
+    }
+
+    const message = `${property.title}\n\n${property.description || ""}\n\nPrecio: ${property.price} ${property.currency}\nUbicación: ${property.city}, ${property.address}\n${property.bedrooms ? `${property.bedrooms} hab · ` : ""}${property.bathrooms ? `${property.bathrooms} baños` : ""}`;
 
     const result = await publishToFacebook({
       accessToken,
