@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Phone, Mail, MessageSquare, Plus } from "lucide-react";
+import { ArrowLeft, Phone, Mail, Plus, CalendarClock } from "lucide-react";
 import { useState } from "react";
 
 const statusColors: Record<string, string> = {
@@ -34,7 +34,22 @@ export default function LeadDetailPage() {
   });
 
   const updateStatus = trpc.lead.update.useMutation({
-    onSuccess: () => utils.lead.list.invalidate(),
+    onSuccess: () => {
+      utils.lead.list.invalidate();
+      utils.lead.getById.invalidate({ id: lead?.id ?? (params.id as string) });
+    },
+  });
+
+  const scheduleFollowUp = trpc.lead.scheduleFollowUp.useMutation({
+    onSuccess: () => {
+      utils.lead.getById.invalidate({ id: lead?.id ?? (params.id as string) });
+    },
+  });
+
+  const clearFollowUp = trpc.lead.clearFollowUp.useMutation({
+    onSuccess: () => {
+      utils.lead.getById.invalidate({ id: lead?.id ?? (params.id as string) });
+    },
   });
 
   const addInteraction = trpc.lead.addInteraction.useMutation({
@@ -165,6 +180,70 @@ export default function LeadDetailPage() {
               <option value="CLOSED_WON">Cerrado ganado</option>
               <option value="CLOSED_LOST">Cerrado perdido</option>
             </select>
+          </div>
+
+          <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">
+              Nivel de interés
+            </h3>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  onClick={() =>
+                    updateStatus.mutate({ id: lead.id, interestLevel: n })
+                  }
+                  className={`h-8 w-8 rounded-full text-sm transition-colors ${
+                    lead.interestLevel && n <= lead.interestLevel
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+                  }`}
+                  title={`Nivel ${n}`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <CalendarClock className="h-5 w-5 text-gray-500" />
+              Seguimiento
+            </h3>
+            {lead.nextFollowUpAt ? (
+              <p className="mb-3 text-sm text-gray-600">
+                Próximo seguimiento:{" "}
+                <span className="font-semibold">
+                  {new Date(lead.nextFollowUpAt).toLocaleDateString("es-PE", {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "long",
+                  })}
+                </span>
+              </p>
+            ) : (
+              <p className="mb-3 text-sm text-gray-500">
+                Sin seguimiento programado
+              </p>
+            )}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => scheduleFollowUp.mutate({ leadId: lead.id, days: 2 })}
+                disabled={scheduleFollowUp.isPending}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                Programar en 2 días
+              </button>
+              {lead.nextFollowUpAt && (
+                <button
+                  onClick={() => clearFollowUp.mutate({ leadId: lead.id })}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Completar seguimiento
+                </button>
+              )}
+            </div>
           </div>
 
           {lead.property && (

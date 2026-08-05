@@ -23,6 +23,38 @@ const statusLabels: Record<string, string> = {
   CLOSED_LOST: "Perdido",
 };
 
+function isOverdue(date: string): boolean {
+  return new Date(date).setHours(0, 0, 0, 0) <= new Date().setHours(0, 0, 0, 0);
+}
+
+function FollowUpBadge({ date }: { date: string | null }) {
+  if (!date) return null;
+  const overdue = isOverdue(date);
+  const label = new Date(date).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+        overdue ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"
+      }`}
+    >
+      {overdue ? `Seguimiento pendiente (${label})` : `Seg. ${label}`}
+    </span>
+  );
+}
+
+function InterestLevel({ level }: { level: number | null }) {
+  if (!level) return null;
+  return (
+    <span className="text-xs text-gray-400" title={`Interés ${level}/5`}>
+      {"●".repeat(level)}
+      <span className="text-gray-200">{"●".repeat(5 - level)}</span>
+    </span>
+  );
+}
+
 export default function LeadsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -122,6 +154,8 @@ export default function LeadsPage() {
                     {lead.property.title}
                   </span>
                 )}
+                <InterestLevel level={lead.interestLevel} />
+                <FollowUpBadge date={lead.nextFollowUpAt as string | null} />
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
                     statusColors[lead.status] || "bg-gray-100 text-gray-700"

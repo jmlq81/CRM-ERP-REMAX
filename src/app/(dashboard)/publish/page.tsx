@@ -111,6 +111,24 @@ export default function PublishPage() {
                   </option>
                 ))}
               </select>
+              {selectedProperty && (
+                (() => {
+                  const p = properties?.properties.find((x) => x.id === selectedProperty);
+                  const photoCount = p?.photos?.length ?? 0;
+                  const ready = photoCount >= 3;
+                  return (
+                    <p
+                      className={`mt-1 text-xs ${
+                        ready ? "text-green-600" : "text-amber-600"
+                      }`}
+                    >
+                      {ready
+                        ? `${photoCount} fotos listas (se publicará como carrusel${p?.videoUrl ? " + video" : ""})`
+                        : `Necesitas al menos 3 fotos para publicar (actualmente: ${photoCount})`}
+                    </p>
+                  );
+                })()
+              )}
             </div>
 
             <div>

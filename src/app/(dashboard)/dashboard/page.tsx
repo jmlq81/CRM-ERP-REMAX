@@ -6,16 +6,26 @@ import {
   Home,
   Users,
   CheckSquare,
-  TrendingUp,
   Clock,
-  DollarSign,
+  CalendarClock,
+  ChevronRight,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { data: properties } = trpc.property.list.useQuery({});
-  const { data: leads } = trpc.lead.list.useQuery({});
+  const { data: leads } = trpc.lead.list.useQuery({ limit: 100 });
   const { data: tasks } = trpc.task.list.useQuery({ completed: false });
+
+  const pendingFollowUps =
+    leads?.leads.filter((lead) => {
+      if (!lead.nextFollowUpAt) return false;
+      return (
+        new Date(lead.nextFollowUpAt).setHours(0, 0, 0, 0) <=
+        new Date().setHours(0, 0, 0, 0)
+      );
+    }) ?? [];
 
   const stats = [
     {
@@ -37,10 +47,10 @@ export default function DashboardPage() {
       color: "bg-yellow-500",
     },
     {
-      name: "Propiedades en Venta",
-      value: properties?.properties.filter((p) => p.status === "ACTIVE").length ?? 0,
-      icon: TrendingUp,
-      color: "bg-purple-500",
+      name: "Seguimientos Hoy",
+      value: pendingFollowUps.length,
+      icon: CalendarClock,
+      color: "bg-red-500",
     },
   ];
 
@@ -71,6 +81,41 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Seguimientos pendientes
+          </h2>
+          {pendingFollowUps.length > 0 ? (
+            <div className="space-y-3">
+              {pendingFollowUps.slice(0, 5).map((lead) => (
+                <Link
+                  key={lead.id}
+                  href={`/leads/${lead.id}`}
+                  className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{lead.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {lead.phone || lead.email || lead.source}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-red-600">
+                      Vence {new Date(lead.nextFollowUpAt!).toLocaleDateString("es-PE")}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              No hay seguimientos vencidos. Programe el próximo contacto de cada
+              lead desde su ficha.
+            </p>
+          )}
+        </div>
+
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
             Últimas Propiedades

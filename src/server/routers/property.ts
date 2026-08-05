@@ -1,5 +1,12 @@
 import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
+import { supabase } from "@/lib/supabase";
+
+function storagePathFromUrl(url: string): string {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (base && url.startsWith(base)) return url.slice(base.length).replace(/^\/storage\/v1\/object\/public\/properties\//, "");
+  return url.replace(/^.*\/properties\//, "");
+}
 
 const propertyRouter = router({
   list: protectedProcedure
@@ -81,6 +88,11 @@ const propertyRouter = router({
         yearBuilt: z.number().optional(),
         parking: z.number().optional(),
         floors: z.number().optional(),
+        videoUrl: z.string().optional(),
+        contactName: z.string().optional(),
+        contactPhone: z.string().optional(),
+        featuredText1: z.string().optional(),
+        featuredText2: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -105,6 +117,24 @@ const propertyRouter = router({
       return ctx.db.property.delete({
         where: { id: input.id, userId: ctx.session.user.id },
       });
+    }),
+
+  deletePhoto: protectedProcedure
+    .input(z.object({ photoId: z.string(), propertyId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const photo = await ctx.db.propertyPhoto.findFirst({
+        where: {
+          id: input.photoId,
+          property: { id: input.propertyId, userId: ctx.session.user.id },
+        },
+      });
+      if (!photo) throw new Error("Foto no encontrada");
+      await ctx.db.propertyPhoto.delete({ where: { id: photo.id } });
+      const path = storagePathFromUrl(photo.url);
+      if (path) {
+        await supabase.storage.from("properties").remove([path]).catch(() => {});
+      }
+      return { success: true };
     }),
 });
 

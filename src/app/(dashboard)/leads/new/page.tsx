@@ -19,6 +19,7 @@ export default function NewLeadPage() {
     notes: string;
     budget: string;
     propertyId: string;
+    interestLevel: string;
   }>({
     name: "",
     email: "",
@@ -27,6 +28,7 @@ export default function NewLeadPage() {
     notes: "",
     budget: "",
     propertyId: "",
+    interestLevel: "",
   });
 
   const createLead = trpc.lead.create.useMutation({
@@ -42,6 +44,9 @@ export default function NewLeadPage() {
       ...(form as any),
       budget: form.budget ? Number(form.budget) : undefined,
       propertyId: form.propertyId || undefined,
+      interestLevel: form.interestLevel
+        ? Number(form.interestLevel)
+        : undefined,
     });
   };
 
@@ -144,14 +149,31 @@ export default function NewLeadPage() {
                 ))}
               </select>
             </div>
-            <div className="sm:col-span-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Nivel de interés (1-5)
+              </label>
+              <select
+                value={form.interestLevel}
+                onChange={(e) => setForm({ ...form, interestLevel: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none"
+              >
+                <option value="">Sin asignar</option>
+                <option value="1">1 - Muy bajo</option>
+                <option value="2">2 - Bajo</option>
+                <option value="3">3 - Medio</option>
+                <option value="4">4 - Alto</option>
+                <option value="5">5 - Muy alto</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">
                 Notas
               </label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                rows={3}
+                rows={2}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
               />
             </div>

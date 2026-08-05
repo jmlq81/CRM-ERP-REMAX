@@ -36,6 +36,12 @@ export default function PropertyDetailPage() {
     },
   });
 
+  const deletePhoto = trpc.property.deletePhoto.useMutation({
+    onSuccess: () => {
+      utils.property.getById.invalidate({ id: property?.id ?? (params.id as string) });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6">
@@ -99,6 +105,24 @@ export default function PropertyDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
+          {property.photos.length < 3 && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+              Agrega al menos 3 fotos (máximo 10) para poder publicar en Facebook.{" "}
+              {property.photos.length}/3 completadas.
+            </div>
+          )}
+          {property.videoUrl && (
+            <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+              <a
+                href={property.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 font-semibold text-red-600 hover:underline"
+              >
+                Ver video de la propiedad
+              </a>
+            </div>
+          )}
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
             {property.photos.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
@@ -135,33 +159,53 @@ export default function PropertyDetailPage() {
                     alt={photo.alt || property.title}
                     className="h-32 w-full rounded-lg object-cover"
                   />
+                  <button
+                    onClick={() => {
+                      if (confirm("¿Eliminar esta foto?")) {
+                        deletePhoto.mutate({
+                          photoId: photo.id,
+                          propertyId: property.id,
+                        });
+                      }
+                    }}
+                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    title="Eliminar foto"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
-              <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 hover:border-red-500">
-                <div className="text-center">
-                  <Upload className="mx-auto h-6 w-6 text-gray-400" />
-                  <span className="mt-1 block text-xs text-gray-500">
-                    {uploading ? "Subiendo..." : "Agregar foto"}
-                  </span>
+              {property.photos.length < 10 ? (
+                <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-300 hover:border-red-500">
+                  <div className="text-center">
+                    <Upload className="mx-auto h-6 w-6 text-gray-400" />
+                    <span className="mt-1 block text-xs text-gray-500">
+                      {uploading ? "Subiendo..." : "Agregar foto"}
+                    </span>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      formData.append("propertyId", property.id);
+                      await fetch("/api/upload", { method: "POST", body: formData });
+                      utils.property.getById.invalidate({ id: property.id });
+                      setUploading(false);
+                    }}
+                  />
+                </label>
+              ) : (
+                <div className="flex h-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-center text-xs text-gray-400">
+                  Máximo 10 fotos
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setUploading(true);
-                    const formData = new FormData();
-                    formData.append("file", file);
-                    formData.append("propertyId", property.id);
-                    await fetch("/api/upload", { method: "POST", body: formData });
-                    utils.property.getById.invalidate({ id: property.id });
-                    setUploading(false);
-                  }}
-                />
-              </label>
+              )}
             </div>
           </div>
 

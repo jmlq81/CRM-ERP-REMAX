@@ -58,20 +58,46 @@ const leadRouter = router({
         notes: z.string().optional(),
         budget: z.number().optional(),
         propertyId: z.string().optional(),
+        interestLevel: z.number().min(1).max(5).optional(),
+        nextFollowUpAt: z.string().datetime().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const { nextFollowUpAt, ...data } = input;
       return ctx.db.lead.create({
-        data: { ...input, userId: ctx.session.user.id },
+        data: {
+          ...data,
+          nextFollowUpAt: nextFollowUpAt ? new Date(nextFollowUpAt) : undefined,
+          userId: ctx.session.user.id,
+        },
       });
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), status: z.enum(["NEW", "CONTACTED", "QUALIFIED", "NEGOTIATION", "CLOSED_WON", "CLOSED_LOST"]) }))
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional().nullable(),
+        phone: z.string().optional().nullable(),
+        notes: z.string().optional().nullable(),
+        budget: z.number().optional().nullable(),
+        propertyId: z.string().optional().nullable(),
+        status: z.enum(["NEW", "CONTACTED", "QUALIFIED", "NEGOTIATION", "CLOSED_WON", "CLOSED_LOST"]).optional(),
+        interestLevel: z.number().min(1).max(5).optional().nullable(),
+        nextFollowUpAt: z.string().datetime().optional().nullable(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
+      const { id, nextFollowUpAt, ...data } = input;
       return ctx.db.lead.update({
         where: { id: input.id, userId: ctx.session.user.id },
-        data: { status: input.status },
+        data: {
+          ...data,
+          ...(nextFollowUpAt !== undefined
+            ? { nextFollowUpAt: nextFollowUpAt ? new Date(nextFollowUpAt) : null }
+            : {}),
+        },
       });
     }),
 
@@ -89,6 +115,33 @@ const leadRouter = router({
           ...input,
           userId: ctx.session.user.id,
         },
+      });
+    }),
+
+  scheduleFollowUp: protectedProcedure
+    .input(z.object({ leadId: z.string(), days: z.number().min(1).max(30).default(2) }))
+    .mutation(async ({ ctx, input }) => {
+      const lead = await ctx.db.lead.findFirst({
+        where: { id: input.leadId, userId: ctx.session.user.id },
+      });
+      if (!lead) throw new Error("Lead no encontrado");
+
+      const nextFollowUpAt = new Date();
+      nextFollowUpAt.setDate(nextFollowUpAt.getDate() + input.days);
+      nextFollowUpAt.setHours(9, 0, 0, 0);
+
+      return ctx.db.lead.update({
+        where: { id: lead.id },
+        data: { nextFollowUpAt },
+      });
+    }),
+
+  clearFollowUp: protectedProcedure
+    .input(z.object({ leadId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.lead.update({
+        where: { id: input.leadId, userId: ctx.session.user.id },
+        data: { nextFollowUpAt: null },
       });
     }),
 

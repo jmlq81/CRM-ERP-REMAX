@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/prisma";
-import { publishToFacebook } from "@/lib/facebook";
+import { publishToFacebook, publishCarouselToFacebook } from "@/lib/facebook";
+import { generatePropertyDescription } from "@/lib/propertyDescription";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -43,14 +44,52 @@ export async function POST(req: Request) {
       );
     }
 
-    const message = `${property.title}\n\n${property.description || ""}\n\nPrecio: ${property.price} ${property.currency}\nUbicación: ${property.city}, ${property.address}\n${property.bedrooms ? `${property.bedrooms} hab · ` : ""}${property.bathrooms ? `${property.bathrooms} baños` : ""}`;
+    const photos = [...property.photos]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((p) => p.url);
 
-    const result = await publishToFacebook({
-      accessToken,
-      pageId,
-      message,
-      imageUrl: property.photos[0]?.url,
-    });
+    if (photos.length < 3) {
+      return Response.json(
+        { error: "Se necesitan al menos 3 fotos para publicar en Facebook." },
+        { status: 400 }
+      );
+    }
+
+    const message =
+      property.description?.trim() ||
+      generatePropertyDescription({
+        type: property.type,
+        price: Number(property.price),
+        currency: property.currency,
+        city: property.city,
+        district: property.district || undefined,
+        area: property.area,
+        areaUnit: property.areaUnit,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        featuredText1: property.featuredText1,
+        featuredText2: property.featuredText2,
+        contactName: property.contactName,
+        contactPhone: property.contactPhone,
+      });
+
+    let result: { id: string };
+    if (property.videoUrl) {
+      result = await publishToFacebook({
+        accessToken,
+        pageId,
+        message,
+        imageUrl: photos[0],
+        link: property.videoUrl,
+      });
+    } else {
+      result = await publishCarouselToFacebook({
+        accessToken,
+        pageId,
+        message,
+        imageUrls: photos.slice(0, 10),
+      });
+    }
 
     await db.publication.create({
       data: {
