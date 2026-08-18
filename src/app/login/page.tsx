@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Home, Loader2, AlertCircle } from "lucide-react";
@@ -30,15 +30,36 @@ const DEFAULT_ERROR = "Error al iniciar sesión. Intenta de nuevo.";
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const errorParam = searchParams.get("error");
   const errorMessage = errorParam ? (ERROR_MESSAGES[errorParam] ?? DEFAULT_ERROR) : null;
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [credentialsError, setCredentialsError] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
+  };
+
+  const handleCredentialsLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setCredentialsError(null);
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+    if (result?.error) {
+      setCredentialsError("Correo o contraseña incorrectos.");
+      setLoading(false);
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   return (
@@ -81,13 +102,15 @@ function LoginForm() {
           </div>
         </div>
 
-        <form className="space-y-4">
+        <form onSubmit={handleCredentialsLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Correo electrónico
             </label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="ejemplo@correo.com"
               className="mt-1.5 block w-full rounded-lg border border-gray-300 px-4 py-3 transition-all placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
               required
@@ -100,11 +123,20 @@ function LoginForm() {
             </label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="mt-1.5 block w-full rounded-lg border border-gray-300 px-4 py-3 transition-all placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
               required
             />
           </div>
+
+          {credentialsError && (
+            <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+              <p className="text-sm text-red-700">{credentialsError}</p>
+            </div>
+          )}
 
           <button
             type="submit"
@@ -117,9 +149,9 @@ function LoginForm() {
 
         <p className="text-center text-sm text-gray-500">
           ¿No tienes cuenta?{" "}
-          <button className="font-semibold text-red-600 hover:text-red-500 transition-colors">
+          <Link href="/register" className="font-semibold text-red-600 hover:text-red-500 transition-colors">
             Regístrate aquí
-          </button>
+          </Link>
         </p>
       </div>
     </div>

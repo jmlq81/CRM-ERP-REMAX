@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
@@ -8,8 +9,9 @@ import {
   Plus, Search, Filter, MapPin, BedDouble, Bath, Maximize, Home
 } from "lucide-react";
 
-export default function PropertiesPage() {
-  const [search, setSearch] = useState("");
+function PropertiesContent() {
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [status, setStatus] = useState("");
   const [city, setCity] = useState("");
 
@@ -178,5 +180,13 @@ export default function PropertiesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense fallback={<div className="animate-pulse h-96 rounded-xl bg-gray-200" />}>
+      <PropertiesContent />
+    </Suspense>
   );
 }

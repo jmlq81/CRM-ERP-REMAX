@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { generatePropertyDescription } from "@/lib/propertyDescription";
@@ -40,34 +40,33 @@ export default function EditPropertyPage() {
     featuredText2: "",
   });
 
-  const [loaded, setLoaded] = useState(false);
-
-  if (property && !loaded) {
-    setForm({
-      title: property.title,
-      description: property.description || "",
-      price: String(property.price),
-      currency: property.currency,
-      address: property.address,
-      city: property.city,
-      district: property.district || "",
-      state: property.state || "",
-      country: property.country,
-      bedrooms: property.bedrooms ? String(property.bedrooms) : "",
-      bathrooms: property.bathrooms ? String(property.bathrooms) : "",
-      area: property.area ? String(property.area) : "",
-      type: property.type,
-      yearBuilt: property.yearBuilt ? String(property.yearBuilt) : "",
-      parking: property.parking ? String(property.parking) : "",
-      floors: property.floors ? String(property.floors) : "",
-      videoUrl: property.videoUrl || "",
-      contactName: property.contactName || "",
-      contactPhone: property.contactPhone || "",
-      featuredText1: property.featuredText1 || "",
-      featuredText2: property.featuredText2 || "",
-    });
-    setLoaded(true);
-  }
+  useEffect(() => {
+    if (property) {
+      setForm({
+        title: property.title,
+        description: property.description || "",
+        price: String(property.price),
+        currency: property.currency,
+        address: property.address,
+        city: property.city,
+        district: property.district || "",
+        state: property.state || "",
+        country: property.country,
+        bedrooms: property.bedrooms ? String(property.bedrooms) : "",
+        bathrooms: property.bathrooms ? String(property.bathrooms) : "",
+        area: property.area ? String(property.area) : "",
+        type: property.type,
+        yearBuilt: property.yearBuilt ? String(property.yearBuilt) : "",
+        parking: property.parking ? String(property.parking) : "",
+        floors: property.floors ? String(property.floors) : "",
+        videoUrl: property.videoUrl || "",
+        contactName: property.contactName || "",
+        contactPhone: property.contactPhone || "",
+        featuredText1: property.featuredText1 || "",
+        featuredText2: property.featuredText2 || "",
+      });
+    }
+  }, [property]);
 
   const updateProperty = trpc.property.update.useMutation({
     onSuccess: () => {
