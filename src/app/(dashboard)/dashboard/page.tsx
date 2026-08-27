@@ -9,6 +9,7 @@ import {
   Clock,
   CalendarClock,
   ChevronRight,
+  Coins,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
@@ -17,6 +18,19 @@ export default function DashboardPage() {
   const { data: properties } = trpc.property.list.useQuery({});
   const { data: leads } = trpc.lead.list.useQuery({ limit: 100 });
   const { data: tasks } = trpc.task.list.useQuery({ completed: false });
+  const { data: deals } = trpc.deal.list.useQuery({});
+  const { data: me } = trpc.user.me.useQuery();
+
+  const pendingCommissions =
+    deals
+      ?.filter((d) => d.status === "CLOSED_WON")
+      .flatMap((d) => d.commissions)
+      .filter((c) => c.userId === me?.id && c.status === "PENDING") ?? [];
+
+  const pendingCommissionTotal = pendingCommissions.reduce(
+    (sum, c) => sum + Number(c.amount),
+    0
+  );
 
   const pendingFollowUps =
     leads?.leads.filter((lead) => {
@@ -173,6 +187,37 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+        <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Mis Comisiones Pendientes
+          </h2>
+          {pendingCommissions.length > 0 ? (
+            <div className="space-y-3">
+              {pendingCommissions.slice(0, 5).map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/deals/${c.dealId}`}
+                  className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-green-500" />
+                    <p className="font-medium text-gray-900">{c.user.name}</p>
+                  </div>
+                  <p className="font-semibold text-green-700">
+                    {formatCurrency(Number(c.amount), c.currency)}
+                  </p>
+                </Link>
+              ))}
+              <p className="pt-2 text-sm font-medium text-gray-700">
+                Total: {formatCurrency(pendingCommissionTotal, "PEN")}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              No tienes comisiones pendientes.
+            </p>
+          )}
         </div>
       </div>
     </div>

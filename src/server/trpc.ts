@@ -41,3 +41,27 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     },
   });
 });
+
+export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const user = await db.user.findUnique({
+    where: { id: ctx.session.user.id },
+    select: { role: true },
+  });
+  if (user?.role !== "ADMIN") {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      role: "ADMIN" as const,
+    },
+  });
+});
+
+export async function getUserRole(ctx: { session: { user: { id: string } } }) {
+  const user = await db.user.findUnique({
+    where: { id: ctx.session.user.id },
+    select: { role: true },
+  });
+  return user?.role ?? "AGENT";
+}

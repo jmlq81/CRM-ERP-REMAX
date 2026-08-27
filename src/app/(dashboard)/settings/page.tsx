@@ -68,6 +68,15 @@ export default function SettingsPage() {
           <div>
             <p className="font-semibold text-gray-900">{user?.name || "Sin nombre"}</p>
             <p className="text-sm text-gray-500">{user?.email}</p>
+            <span
+              className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                user?.role === "ADMIN"
+                  ? "bg-purple-100 text-purple-700"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {user?.role === "ADMIN" ? "Administrador" : "Agente"}
+            </span>
           </div>
         </div>
 

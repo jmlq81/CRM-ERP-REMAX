@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -11,21 +11,29 @@ import {
   CheckSquare,
   Globe,
   BarChart3,
+  Handshake,
+  Shield,
   Settings,
   LogOut,
 } from "lucide-react";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Propiedades", href: "/properties", icon: Home },
-  { name: "Leads", href: "/leads", icon: Users },
-  { name: "Tareas", href: "/tasks", icon: CheckSquare },
-  { name: "Publicar", href: "/publish", icon: Globe },
-  { name: "Reportes", href: "/reports", icon: BarChart3 },
-];
-
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  const navigation = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Propiedades", href: "/properties", icon: Home },
+    { name: "Leads", href: "/leads", icon: Users },
+    { name: "Operaciones", href: "/deals", icon: Handshake },
+    { name: "Tareas", href: "/tasks", icon: CheckSquare },
+    { name: "Publicar", href: "/publish", icon: Globe },
+    { name: "Reportes", href: "/reports", icon: BarChart3 },
+    ...(isAdmin
+      ? [{ name: "Equipo", href: "/admin/agents", icon: Shield }]
+      : []),
+  ];
 
   return (
     <div className="flex h-full w-64 flex-col bg-gray-900 text-white">

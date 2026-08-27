@@ -28,15 +28,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async session({ session, user, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = (user?.id ?? token.sub) as string;
+        const dbUser = await db.user.findUnique({
+          where: { id: session.user.id },
+          select: { role: true },
+        });
+        session.user.role = dbUser?.role ?? "AGENT";
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        (token as any).id = user.id;
+        const dbUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+        (token as any).role = dbUser?.role ?? "AGENT";
       }
       return token;
     },
@@ -59,6 +69,7 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
+      role?: "ADMIN" | "AGENT";
     };
   }
 }

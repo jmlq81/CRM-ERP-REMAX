@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, getUserRole } from "../trpc";
 import { z } from "zod";
 
 const leadRouter = router({
@@ -9,10 +9,17 @@ const leadRouter = router({
         search: z.string().optional(),
         limit: z.number().default(20),
         offset: z.number().default(0),
+        agentId: z.string().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: Record<string, unknown> = { userId: ctx.session.user.id };
+      const role = await getUserRole(ctx);
+      const where: Record<string, unknown> = {};
+      if (input.agentId && role === "ADMIN") {
+        where.userId = input.agentId;
+      } else {
+        where.userId = ctx.session.user.id;
+      }
 
       if (input.status) where.status = input.status;
       if (input.search) {
