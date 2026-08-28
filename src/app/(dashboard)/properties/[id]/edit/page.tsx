@@ -1,77 +1,69 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { generatePropertyDescription } from "@/lib/propertyDescription";
 import { ArrowLeft, Save, Sparkles } from "lucide-react";
 
-export default function EditPropertyPage() {
-  const params = useParams();
+interface PropertyData {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number | string;
+  currency: string;
+  address: string;
+  city: string;
+  district: string | null;
+  state: string | null;
+  country: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area: number | null;
+  type: string;
+  yearBuilt: number | null;
+  parking: number | null;
+  floors: number | null;
+  videoUrl: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  featuredText1: string | null;
+  featuredText2: string | null;
+}
+
+function EditPropertyForm({ property }: { property: PropertyData }) {
   const router = useRouter();
   const utils = trpc.useUtils();
 
-  const { data: property, isLoading } = trpc.property.getById.useQuery({
-    id: params.id as string,
-  });
-
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    price: "",
-    currency: "PEN",
-    address: "",
-    city: "",
-    district: "",
-    state: "",
-    country: "Peru",
-    bedrooms: "",
-    bathrooms: "",
-    area: "",
-    type: "HOUSE",
-    yearBuilt: "",
-    parking: "",
-    floors: "",
-    videoUrl: "",
-    contactName: "",
-    contactPhone: "",
-    featuredText1: "",
-    featuredText2: "",
+    title: property.title,
+    description: property.description || "",
+    price: String(property.price),
+    currency: property.currency,
+    address: property.address,
+    city: property.city,
+    district: property.district || "",
+    state: property.state || "",
+    country: property.country,
+    bedrooms: property.bedrooms ? String(property.bedrooms) : "",
+    bathrooms: property.bathrooms ? String(property.bathrooms) : "",
+    area: property.area ? String(property.area) : "",
+    type: property.type,
+    yearBuilt: property.yearBuilt ? String(property.yearBuilt) : "",
+    parking: property.parking ? String(property.parking) : "",
+    floors: property.floors ? String(property.floors) : "",
+    videoUrl: property.videoUrl || "",
+    contactName: property.contactName || "",
+    contactPhone: property.contactPhone || "",
+    featuredText1: property.featuredText1 || "",
+    featuredText2: property.featuredText2 || "",
   });
-
-  useEffect(() => {
-    if (property) {
-      setForm({
-        title: property.title,
-        description: property.description || "",
-        price: String(property.price),
-        currency: property.currency,
-        address: property.address,
-        city: property.city,
-        district: property.district || "",
-        state: property.state || "",
-        country: property.country,
-        bedrooms: property.bedrooms ? String(property.bedrooms) : "",
-        bathrooms: property.bathrooms ? String(property.bathrooms) : "",
-        area: property.area ? String(property.area) : "",
-        type: property.type,
-        yearBuilt: property.yearBuilt ? String(property.yearBuilt) : "",
-        parking: property.parking ? String(property.parking) : "",
-        floors: property.floors ? String(property.floors) : "",
-        videoUrl: property.videoUrl || "",
-        contactName: property.contactName || "",
-        contactPhone: property.contactPhone || "",
-        featuredText1: property.featuredText1 || "",
-        featuredText2: property.featuredText2 || "",
-      });
-    }
-  }, [property]);
 
   const updateProperty = trpc.property.update.useMutation({
     onSuccess: () => {
       utils.property.list.invalidate();
-      router.push(`/properties/${params.id}`);
+      router.push(`/properties/${property.id}`);
     },
   });
 
@@ -96,9 +88,17 @@ export default function EditPropertyPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateProperty.mutate({
-      id: params.id as string,
-      ...(form as any),
+      id: property.id,
+      title: form.title,
+      description: form.description,
       price: Number(form.price),
+      currency: form.currency,
+      address: form.address,
+      city: form.city,
+      district: form.district,
+      state: form.state,
+      country: form.country,
+      type: form.type,
       bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
       bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
       area: form.area ? Number(form.area) : undefined,
@@ -113,13 +113,10 @@ export default function EditPropertyPage() {
     });
   };
 
-  if (isLoading) return <div className="animate-pulse h-96 rounded-xl bg-gray-200" />;
-  if (!property) return <p className="text-gray-500">Propiedad no encontrada</p>;
-
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center gap-4">
-        <Link href={`/properties/${params.id}`} className="rounded-lg p-2 hover:bg-gray-100">
+        <Link href={`/properties/${property.id}`} className="rounded-lg p-2 hover:bg-gray-100">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -233,7 +230,7 @@ export default function EditPropertyPage() {
         </div>
 
         <div className="flex justify-end gap-4">
-          <Link href={`/properties/${params.id}`} className="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+          <Link href={`/properties/${property.id}`} className="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
             Cancelar
           </Link>
           <button type="submit" disabled={updateProperty.isPending} className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
@@ -244,4 +241,17 @@ export default function EditPropertyPage() {
       </form>
     </div>
   );
+}
+
+export default function EditPropertyPage() {
+  const params = useParams();
+
+  const { data: property, isLoading } = trpc.property.getById.useQuery({
+    id: params.id as string,
+  });
+
+  if (isLoading) return <div className="animate-pulse h-96 rounded-xl bg-gray-200" />;
+  if (!property) return <p className="text-gray-500">Propiedad no encontrada</p>;
+
+  return <EditPropertyForm key={property.id} property={property} />;
 }

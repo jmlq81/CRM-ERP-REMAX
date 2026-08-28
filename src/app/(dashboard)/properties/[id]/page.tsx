@@ -341,7 +341,7 @@ export default function PropertyDetailPage() {
               </div>
             ) : (
               <p className="text-sm text-gray-500">
-                No hay operaciones. Crea una con el botón "Nueva Operación".
+                No hay operaciones. Crea una con el botón {"\u201CNueva Operación\u201D"}.
               </p>
             )}
           </div>
