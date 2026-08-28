@@ -1,6 +1,9 @@
 import { db } from "@/lib/prisma";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    return Response.json({ status: "not_found" }, { status: 404 });
+  }
   const results: Record<string, unknown> = {};
   const errors: string[] = [];
 

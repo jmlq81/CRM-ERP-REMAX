@@ -2,6 +2,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/prisma";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.role || session.user.role !== "ADMIN") {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const errors: string[] = [];
   const info: Record<string, unknown> = {};
 
@@ -14,12 +19,7 @@ export async function GET() {
     errors.push(`DB: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  try {
-    const session = await auth();
-    info.sessionExists = !!session;
-  } catch (e) {
-    errors.push(`Auth: ${e instanceof Error ? e.message : String(e)}`);
-  }
+  info.sessionExists = !!session;
 
   return Response.json({
     status: errors.length === 0 ? "ok" : "error",
