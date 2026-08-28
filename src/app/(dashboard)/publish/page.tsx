@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Globe, MessageCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import ConnectFacebook from "@/components/ConnectFacebook";
@@ -26,25 +27,22 @@ export default function PublishPage() {
   const [selectedAccount, setSelectedAccount] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
-  const [loadingAccounts, setLoadingAccounts] = useState(true);
 
   const { data: properties } = trpc.property.list.useQuery({});
 
-  const loadAccounts = useCallback(async () => {
-    try {
+  const queryClient = useQueryClient();
+  const { data: accounts = [], isLoading: loadingAccounts } = useQuery<ConnectedAccount[]>({
+    queryKey: ["facebookAccounts"],
+    queryFn: async () => {
       const res = await fetch("/api/facebook/accounts");
       const data = await res.json();
-      setAccounts(data.accounts || []);
-    } catch {
-      setAccounts([]);
-    }
-    setLoadingAccounts(false);
-  }, []);
+      return data.accounts || [];
+    },
+  });
 
-  useEffect(() => {
-    loadAccounts();
-  }, [loadAccounts]);
+  const loadAccounts = () => {
+    void queryClient.invalidateQueries({ queryKey: ["facebookAccounts"] });
+  };
 
   const handlePublish = async () => {
     if (!selectedProperty || !selectedAccount) return;

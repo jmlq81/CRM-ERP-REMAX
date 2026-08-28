@@ -44,11 +44,27 @@ export default function NewPropertyPage() {
   });
 
   const buildInput = () => ({
-    ...(form as any),
+    title: form.title,
+    description: form.description || undefined,
     price: Number(form.price),
+    currency: form.currency as "PEN" | "USD" | "EUR",
+    address: form.address,
+    city: form.city,
+    district: form.district || undefined,
+    state: form.state || undefined,
+    country: form.country,
     bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
     bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
     area: form.area ? Number(form.area) : undefined,
+    type: form.type as
+      | "HOUSE"
+      | "APARTMENT"
+      | "CONDO"
+      | "LAND"
+      | "OFFICE"
+      | "WAREHOUSE"
+      | "OTHER",
+    features: form.features,
     yearBuilt: form.yearBuilt ? Number(form.yearBuilt) : undefined,
     parking: form.parking ? Number(form.parking) : undefined,
     floors: form.floors ? Number(form.floors) : undefined,

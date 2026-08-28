@@ -6,6 +6,16 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 
+type LeadSource =
+  | "WEB"
+  | "PHONE"
+  | "EMAIL"
+  | "REFERRAL"
+  | "FACEBOOK"
+  | "INSTAGRAM"
+  | "WHATSAPP"
+  | "OTHER";
+
 export default function NewLeadPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -15,7 +25,7 @@ export default function NewLeadPage() {
     name: string;
     email: string;
     phone: string;
-    source: string;
+    source: LeadSource;
     notes: string;
     budget: string;
     propertyId: string;
@@ -41,7 +51,11 @@ export default function NewLeadPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createLead.mutate({
-      ...(form as any),
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      source: form.source,
+      notes: form.notes,
       budget: form.budget ? Number(form.budget) : undefined,
       propertyId: form.propertyId || undefined,
       interestLevel: form.interestLevel
@@ -108,7 +122,7 @@ export default function NewLeadPage() {
               </label>
               <select
                 value={form.source}
-                onChange={(e) => setForm({ ...form, source: e.target.value })}
+                onChange={(e) => setForm({ ...form, source: e.target.value as LeadSource })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none"
               >
                 <option value="WEB">Sitio Web</option>

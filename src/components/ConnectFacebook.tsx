@@ -24,9 +24,17 @@ interface ConnectedAccount {
   tokenExpiresAt: string | null;
 }
 
+interface FacebookSDK {
+  init(options: { appId?: string; xfbml?: boolean; version?: string }): void;
+  login(
+    cb: (response: { authResponse?: { accessToken?: string }; status?: string }) => void,
+    options?: { scope?: string }
+  ): void;
+}
+
 declare global {
   interface Window {
-    FB?: any;
+    FB?: FacebookSDK;
     fbAsyncInit?: () => void;
   }
 }
@@ -53,7 +61,7 @@ function loadFacebookSDK(): Promise<void> {
   });
 }
 
-async function waitForFB(): Promise<any> {
+async function waitForFB(): Promise<FacebookSDK> {
   for (let i = 0; i < 50; i++) {
     if (window.FB) return window.FB;
     await new Promise((r) => setTimeout(r, 100));
