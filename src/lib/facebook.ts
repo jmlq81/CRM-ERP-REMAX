@@ -1,5 +1,3 @@
-import { db } from "@/lib/prisma";
-
 interface FacebookPublishParams {
   accessToken: string;
   pageId: string;
