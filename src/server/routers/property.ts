@@ -67,7 +67,21 @@ const propertyRouter = router({
     .query(async ({ ctx, input }) => {
       const property = await ctx.db.property.findFirst({
         where: { id: input.id, userId: ctx.session.user.id },
-        include: { photos: true, leads: true, publications: true },
+        include: {
+          photos: true,
+          leads: true,
+          publications: true,
+          deals: {
+            include: {
+              participants: {
+                include: {
+                  user: { select: { id: true, name: true, image: true } },
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          },
+        },
       });
       if (!property) throw new Error("Propiedad no encontrada");
       return property;

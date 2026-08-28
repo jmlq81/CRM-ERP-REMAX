@@ -15,6 +15,7 @@ import {
   Trash2,
   Share2,
   Upload,
+  Handshake,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -78,6 +79,13 @@ export default function PropertyDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Link
+            href={`/deals/new?propertyId=${property.id}`}
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            <Handshake className="h-4 w-4" />
+            Nueva Operación
+          </Link>
           <button className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
             <Share2 className="h-4 w-4" />
             Compartir
@@ -282,6 +290,59 @@ export default function PropertyDetailPage() {
               </div>
             ) : (
               <p className="text-sm text-gray-500">No hay leads registrados</p>
+            )}
+          </div>
+
+          <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">
+              Operaciones
+            </h3>
+            {property.deals.length > 0 ? (
+              <div className="space-y-2">
+                {property.deals.map((deal) => (
+                  <Link
+                    key={deal.id}
+                    href={`/deals/${deal.id}`}
+                    className="block rounded-lg border p-3 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-gray-900">{deal.title}</p>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
+                          deal.status === "OPEN"
+                            ? "bg-blue-100 text-blue-700"
+                            : deal.status === "NEGOTIATION"
+                            ? "bg-amber-100 text-amber-700"
+                            : deal.status === "CLOSED_WON"
+                            ? "bg-green-100 text-green-700"
+                            : deal.status === "CLOSED_LOST"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {deal.status === "OPEN"
+                          ? "Abierta"
+                          : deal.status === "NEGOTIATION"
+                          ? "En negociación"
+                          : deal.status === "CLOSED_WON"
+                          ? "Ganada"
+                          : deal.status === "CLOSED_LOST"
+                          ? "Perdida"
+                          : "Cancelada"}
+                      </span>
+                    </div>
+                    {deal.participants.length > 0 && (
+                      <p className="mt-1 truncate text-sm text-gray-500">
+                        {deal.participants.map((p) => p.user.name).join(", ")}
+                      </p>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                No hay operaciones. Crea una con el botón "Nueva Operación".
+              </p>
             )}
           </div>
 

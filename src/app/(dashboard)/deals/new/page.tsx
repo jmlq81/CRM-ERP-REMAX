@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
@@ -12,16 +12,17 @@ interface Participant {
   sharePct: string;
 }
 
-export default function NewDealPage() {
+function NewDealContent() {
   const router = useRouter();
   const { data: properties, isLoading: loadingProps } = trpc.property.list.useQuery({});
   const { data: leads } = trpc.lead.list.useQuery({});
   const { data: agents } = trpc.agent.listSimple.useQuery();
   const { data: me } = trpc.user.me.useQuery();
+  const searchParams = useSearchParams();
 
   const [form, setForm] = useState({
     title: "",
-    propertyId: "",
+    propertyId: searchParams.get("propertyId") ?? "",
     leadId: "",
     salePrice: "",
     commissionPct: "3",
@@ -299,5 +300,13 @@ export default function NewDealPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewDealPage() {
+  return (
+    <Suspense fallback={<div className="h-10 animate-pulse rounded-lg bg-gray-200" />}>
+      <NewDealContent />
+    </Suspense>
   );
 }
