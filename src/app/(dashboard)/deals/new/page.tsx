@@ -60,12 +60,16 @@ export default function NewDealPage() {
     e.preventDefault();
     if (!form.title.trim() || !form.propertyId) return;
 
-    const shareTotal = participants
-      .filter((p) => p.sharePct)
-      .reduce((sum, p) => sum + Number(p.sharePct), 0);
-    const selfShare = participants.some((p) => p.sharePct)
-      ? 100 - shareTotal
-      : 100;
+    const shares = participants
+      .filter((p) => p.userId && p.sharePct)
+      .map((p) => Number(p.sharePct));
+    if (shares.length > 0) {
+      const total = shares.reduce((sum, s) => sum + s, 0);
+      if (total > 100) {
+        alert("La suma de los porcentajes no puede superar 100%");
+        return;
+      }
+    }
 
     createDeal.mutate({
       title: form.title.trim(),

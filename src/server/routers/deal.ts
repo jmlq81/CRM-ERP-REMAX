@@ -1,4 +1,5 @@
 import { router, protectedProcedure, getUserRole } from "../trpc";
+import type { Context } from "../trpc";
 import { z } from "zod";
 
 const participantSchema = z.object({
@@ -7,12 +8,22 @@ const participantSchema = z.object({
   sharePct: z.number().optional(),
 });
 
-async function canEditDeal(ctx: any, deal: any) {
+type ProcedureCtx = {
+  session: { user: { id: string } };
+  db: Context["db"];
+};
+
+type DealForCheck = {
+  createdById: string;
+  participants: { userId: string }[];
+};
+
+async function canEditDeal(ctx: ProcedureCtx, deal: DealForCheck) {
   const role = await getUserRole(ctx);
   if (role === "ADMIN") return true;
   return (
     deal.createdById === ctx.session.user.id ||
-    deal.participants.some((p: any) => p.userId === ctx.session.user.id)
+    deal.participants.some((p) => p.userId === ctx.session.user.id)
   );
 }
 
@@ -93,7 +104,7 @@ const dealRouter = router({
         },
       });
       if (!deal) throw new Error("Operación no encontrada");
-      if (!(await canEditDeal(ctx, deal as any))) {
+      if (!(await canEditDeal(ctx, deal))) {
         throw new Error("No tienes acceso a esta operación");
       }
       return deal;
@@ -151,7 +162,7 @@ const dealRouter = router({
       const { id, ...data } = input;
       const deal = await ctx.db.deal.findUnique({ where: { id }, include: { participants: true } });
       if (!deal) throw new Error("Operación no encontrada");
-      if (!(await canEditDeal(ctx, deal as any))) throw new Error("Sin permisos");
+      if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
       return ctx.db.deal.update({ where: { id }, data });
     }),
 
@@ -160,7 +171,7 @@ const dealRouter = router({
     .mutation(async ({ ctx, input }) => {
       const deal = await ctx.db.deal.findUnique({ where: { id: input.dealId }, include: { participants: true } });
       if (!deal) throw new Error("Operación no encontrada");
-      if (!(await canEditDeal(ctx, deal as any))) throw new Error("Sin permisos");
+      if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
       return ctx.db.dealParticipant.create({
         data: {
           dealId: input.dealId,
@@ -177,7 +188,7 @@ const dealRouter = router({
     .mutation(async ({ ctx, input }) => {
       const deal = await ctx.db.deal.findUnique({ where: { id: input.dealId }, include: { participants: true } });
       if (!deal) throw new Error("Operación no encontrada");
-      if (!(await canEditDeal(ctx, deal as any))) throw new Error("Sin permisos");
+      if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
       if (input.userId === deal.createdById) throw new Error("El agente principal no puede quitarse a sí mismo");
       const participant = deal.participants.find(
         (p) => p.userId === input.userId && !(p.role === "PRIMARY" && deal.participants.filter((x) => x.role === "PRIMARY").length === 1)
@@ -195,7 +206,7 @@ const dealRouter = router({
         include: { participants: true, property: true },
       });
       if (!deal) throw new Error("Operación no encontrada");
-      if (!(await canEditDeal(ctx, deal as any))) throw new Error("Sin permisos");
+      if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
 
       const salePrice = input.salePrice ?? deal.salePrice ?? Number(deal.property.price);
       const commissionPct = input.commissionPct ?? deal.commissionPct ?? 3;
@@ -234,7 +245,7 @@ const dealRouter = router({
     .mutation(async ({ ctx, input }) => {
       const deal = await ctx.db.deal.findUnique({ where: { id: input.id }, include: { participants: true } });
       if (!deal) throw new Error("Operación no encontrada");
-      if (!(await canEditDeal(ctx, deal as any))) throw new Error("Sin permisos");
+      if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
       await ctx.db.commission.deleteMany({ where: { dealId: deal.id } });
       return ctx.db.deal.update({ where: { id: deal.id }, data: { status: "NEGOTIATION", totalCommission: null } });
     }),

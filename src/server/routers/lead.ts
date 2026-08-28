@@ -96,7 +96,7 @@ const leadRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, nextFollowUpAt, ...data } = input;
+      const { nextFollowUpAt, ...data } = input;
       return ctx.db.lead.update({
         where: { id: input.id, userId: ctx.session.user.id },
         data: {

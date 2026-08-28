@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./prisma";
+import { verifyPassword } from "./password";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -23,7 +24,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const user = await db.user.findUnique({
           where: { email: credentials.email as string },
         });
-        return user;
+        if (!user?.passwordHash) return null;
+        if (!verifyPassword(credentials.password as string, user.passwordHash)) {
+          return null;
+        }
+        const safeUser = { ...user };
+        delete (safeUser as { passwordHash?: string }).passwordHash;
+        return safeUser;
       },
     }),
   ],
@@ -41,12 +48,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
-        (token as any).id = user.id;
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
           select: { role: true },
         });
-        (token as any).role = dbUser?.role ?? "AGENT";
+        Object.assign(token, {
+          id: user.id,
+          role: dbUser?.role ?? "AGENT",
+        });
       }
       return token;
     },

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
@@ -10,7 +10,6 @@ import {
   Check,
   Coins,
   Handshake,
-  Plus,
   RefreshCcw,
   Trash2,
   UserPlus,
@@ -45,9 +44,7 @@ const commissionStatusLabels: Record<string, string> = {
 };
 
 export default function DealDetailPage() {
-  useParams();
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const utils = trpc.useUtils();
 
   const { data: deal, isLoading } = trpc.deal.getById.useQuery({ id });
@@ -62,13 +59,6 @@ export default function DealDetailPage() {
   const [salePrice, setSalePrice] = useState("");
   const [commissionPct, setCommissionPct] = useState("");
   const [newParticipant, setNewParticipant] = useState("");
-
-  useEffect(() => {
-    if (deal) {
-      setSalePrice(deal.salePrice !== null && deal.salePrice !== undefined ? String(deal.salePrice) : "");
-      setCommissionPct(deal.commissionPct != null ? String(deal.commissionPct) : "");
-    }
-  }, [deal]);
 
   const currentUser = trpc.user.me.useQuery();
 
@@ -92,9 +82,9 @@ export default function DealDetailPage() {
     );
   }
 
-  const handleUpdateStatus = (status: string) => {
+  const handleUpdateStatus = (status: "OPEN" | "NEGOTIATION" | "CLOSED_WON" | "CLOSED_LOST" | "CANCELLED") => {
     updateStatus.mutate(
-      { id, status: status as any },
+      { id, status },
       {
         onSuccess: refresh,
         onError: (e) => alert(e.message),

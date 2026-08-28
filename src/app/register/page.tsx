@@ -7,8 +7,7 @@ import Link from "next/link";
 import { Home, Loader2 } from "lucide-react";
 
 function RegisterContent() {
-  const searchParams = useSearchParams();
-  const error = searchParams.get("error");
+  useSearchParams();
 
   useEffect(() => {
     redirect("/login");
