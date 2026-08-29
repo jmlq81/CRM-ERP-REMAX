@@ -172,6 +172,14 @@ const dealRouter = router({
       const deal = await ctx.db.deal.findUnique({ where: { id: input.dealId }, include: { participants: true } });
       if (!deal) throw new Error("Operación no encontrada");
       if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
+      if (input.participant.role === "PRIMARY") {
+        throw new Error("El agente principal es el que creó la operación");
+      }
+      const already = deal.participants.some((p) => p.userId === input.participant.userId);
+      if (already) throw new Error("Ese agente ya participa en la operación");
+      if (input.participant.userId === deal.createdById) {
+        throw new Error("El agente principal no puede añadirse como co-broker");
+      }
       return ctx.db.dealParticipant.create({
         data: {
           dealId: input.dealId,
@@ -223,6 +231,10 @@ const dealRouter = router({
           where: { id: deal.id },
           data: { status: "CLOSED_WON", salePrice, commissionPct, totalCommission },
         }),
+        ctx.db.property.update({
+          where: { id: deal.propertyId },
+          data: { status: "SOLD" },
+        }),
         ctx.db.commission.deleteMany({ where: { dealId: deal.id } }),
         ...shares.map((s) =>
           ctx.db.commission.create({
@@ -243,11 +255,24 @@ const dealRouter = router({
   reopenDeal: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const deal = await ctx.db.deal.findUnique({ where: { id: input.id }, include: { participants: true } });
+      const deal = await ctx.db.deal.findUnique({
+        where: { id: input.id },
+        include: { participants: true, property: true },
+      });
       if (!deal) throw new Error("Operación no encontrada");
       if (!(await canEditDeal(ctx, deal))) throw new Error("Sin permisos");
-      await ctx.db.commission.deleteMany({ where: { dealId: deal.id } });
-      return ctx.db.deal.update({ where: { id: deal.id }, data: { status: "NEGOTIATION", totalCommission: null } });
+      await ctx.db.$transaction([
+        ctx.db.commission.deleteMany({ where: { dealId: deal.id } }),
+        ctx.db.deal.update({
+          where: { id: deal.id },
+          data: { status: "NEGOTIATION", totalCommission: null },
+        }),
+        ctx.db.property.update({
+          where: { id: deal.propertyId },
+          data: { status: "ACTIVE" },
+        }),
+      ]);
+      return { success: true };
     }),
 
   updateCommissionStatus: protectedProcedure
