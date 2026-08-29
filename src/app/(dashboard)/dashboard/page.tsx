@@ -9,16 +9,18 @@ import {
   CalendarClock,
   ChevronRight,
   Coins,
+  Building2,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 
 export default function DashboardPage() {
   const { data: properties } = trpc.property.list.useQuery({});
-  const { data: leads } = trpc.lead.list.useQuery({ limit: 100 });
+  const { data: interesados } = trpc.interesado.list.useQuery({ limit: 100 });
   const { data: tasks } = trpc.task.list.useQuery({ completed: false });
   const { data: deals } = trpc.deal.list.useQuery({});
   const { data: me } = trpc.user.me.useQuery();
+  const { data: empresaContext } = trpc.empresa.context.useQuery(undefined);
 
   const pendingCommissions =
     deals
@@ -32,10 +34,10 @@ export default function DashboardPage() {
   );
 
   const pendingFollowUps =
-    leads?.leads.filter((lead) => {
-      if (!lead.nextFollowUpAt) return false;
+    interesados?.interesados.filter((interesado) => {
+      if (!interesado.nextFollowUpAt) return false;
       return (
-        new Date(lead.nextFollowUpAt).setHours(0, 0, 0, 0) <=
+        new Date(interesado.nextFollowUpAt).setHours(0, 0, 0, 0) <=
         new Date().setHours(0, 0, 0, 0)
       );
     }) ?? [];
@@ -49,13 +51,13 @@ export default function DashboardPage() {
     },
     {
       name: "Interesados Totales",
-      value: leads?.total ?? 0,
+      value: interesados?.total ?? 0,
       icon: Users,
       color: "bg-green-500",
     },
     {
       name: "Tareas Pendientes",
-      value: tasks?.length ?? 0,
+      value: tasks?.tasks.length ?? 0,
       icon: CheckSquare,
       color: "bg-yellow-500",
     },
@@ -73,6 +75,29 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Resumen de tu actividad inmobiliaria</p>
       </div>
+
+      {me?.role === "ADMIN" && empresaContext && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 p-4">
+          <div className="flex items-center gap-3">
+            <Building2 className="h-5 w-5 text-red-600" />
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                Viendo panel de: {empresaContext.nombre}
+              </p>
+              <p className="text-xs text-gray-600">
+                Accedes como administrador a todas las empresas. Los datos que ves
+                pertenecen a esta empresa.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/empresas"
+            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100"
+          >
+            Cambiar empresa
+          </Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
@@ -100,21 +125,21 @@ export default function DashboardPage() {
           </h2>
           {pendingFollowUps.length > 0 ? (
             <div className="space-y-3">
-              {pendingFollowUps.slice(0, 5).map((lead) => (
+              {pendingFollowUps.slice(0, 5).map((interesado) => (
                 <Link
-                  key={lead.id}
-                  href={`/leads/${lead.id}`}
+                  key={interesado.id}
+                  href={`/interesados/${interesado.id}`}
                   className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
                 >
                   <div>
-                    <p className="font-medium text-gray-900">{lead.name}</p>
+                    <p className="font-medium text-gray-900">{interesado.name}</p>
                     <p className="text-sm text-gray-500">
-                      {lead.phone || lead.email || lead.source}
+                      {interesado.phone || interesado.email || interesado.source}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-red-600">
-                      Vence {new Date(lead.nextFollowUpAt!).toLocaleDateString("es-PE")}
+                      Vence {new Date(interesado.nextFollowUpAt!).toLocaleDateString("es-PE")}
                     </span>
                     <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
@@ -158,7 +183,7 @@ export default function DashboardPage() {
             Tareas Pendientes
           </h2>
           <div className="space-y-3">
-            {tasks?.slice(0, 5).map((task) => (
+            {tasks?.tasks.slice(0, 5).map((task) => (
               <div
                 key={task.id}
                 className="flex items-center justify-between rounded-lg border p-3"

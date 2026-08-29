@@ -10,7 +10,7 @@ interface MeUser {
   name: string | null;
   email: string | null;
   image: string | null;
-  role: "ADMIN" | "AGENT";
+  role: "ADMIN" | "OWNER" | "AGENT";
   phone: string | null;
   agency: string | null;
   bio: string | null;

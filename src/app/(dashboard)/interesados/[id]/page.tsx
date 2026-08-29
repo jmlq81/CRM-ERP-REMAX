@@ -24,37 +24,37 @@ const statusLabels: Record<string, string> = {
   CLOSED_LOST: "Cerrado perdido",
 };
 
-export default function LeadDetailPage() {
+export default function InteresadoDetailPage() {
   const params = useParams();
   const [newNote, setNewNote] = useState("");
   const utils = trpc.useUtils();
 
-  const { data: lead, isLoading } = trpc.lead.getById.useQuery({
+  const { data: interesado, isLoading } = trpc.interesado.getById.useQuery({
     id: params.id as string,
   });
 
-  const updateStatus = trpc.lead.update.useMutation({
+  const updateStatus = trpc.interesado.update.useMutation({
     onSuccess: () => {
-      utils.lead.list.invalidate();
-      utils.lead.getById.invalidate({ id: lead?.id ?? (params.id as string) });
+      utils.interesado.list.invalidate();
+      utils.interesado.getById.invalidate({ id: interesado?.id ?? (params.id as string) });
     },
   });
 
-  const scheduleFollowUp = trpc.lead.scheduleFollowUp.useMutation({
+  const scheduleFollowUp = trpc.interesado.scheduleFollowUp.useMutation({
     onSuccess: () => {
-      utils.lead.getById.invalidate({ id: lead?.id ?? (params.id as string) });
+      utils.interesado.getById.invalidate({ id: interesado?.id ?? (params.id as string) });
     },
   });
 
-  const clearFollowUp = trpc.lead.clearFollowUp.useMutation({
+  const clearFollowUp = trpc.interesado.clearFollowUp.useMutation({
     onSuccess: () => {
-      utils.lead.getById.invalidate({ id: lead?.id ?? (params.id as string) });
+      utils.interesado.getById.invalidate({ id: interesado?.id ?? (params.id as string) });
     },
   });
 
-  const addInteraction = trpc.lead.addInteraction.useMutation({
+  const addInteraction = trpc.interesado.addInteraction.useMutation({
     onSuccess: () => {
-      utils.lead.list.invalidate();
+      utils.interesado.list.invalidate();
       setNewNote("");
     },
   });
@@ -68,11 +68,11 @@ export default function LeadDetailPage() {
     );
   }
 
-  if (!lead) {
+  if (!interesado) {
     return (
       <div className="text-center">
         <p className="text-gray-500">Interesado no encontrado</p>
-        <Link href="/leads" className="text-red-600 hover:underline">
+        <Link href="/interesados" className="text-red-600 hover:underline">
           Volver a interesados
         </Link>
       </div>
@@ -82,27 +82,27 @@ export default function LeadDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/leads" className="rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/interesados" className="rounded-lg p-2 hover:bg-gray-100">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-2xl font-bold text-red-600">
-              {lead.name.charAt(0).toUpperCase()}
+              {interesado.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{lead.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{interesado.name}</h1>
               <div className="flex items-center gap-4 text-sm text-gray-500">
-                {lead.email && (
+                {interesado.email && (
                   <span className="flex items-center gap-1">
                     <Mail className="h-4 w-4" />
-                    {lead.email}
+                    {interesado.email}
                   </span>
                 )}
-                {lead.phone && (
+                {interesado.phone && (
                   <span className="flex items-center gap-1">
                     <Phone className="h-4 w-4" />
-                    {lead.phone}
+                    {interesado.phone}
                   </span>
                 )}
               </div>
@@ -118,7 +118,7 @@ export default function LeadDetailPage() {
               Historial de Interacciones
             </h2>
             <div className="space-y-4">
-              {lead.interactions.map((interaction) => (
+              {interesado.interactions.map((interaction) => (
                 <div key={interaction.id} className="rounded-lg border p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900">
@@ -148,7 +148,7 @@ export default function LeadDetailPage() {
                   onClick={() => {
                     if (newNote.trim()) {
                       addInteraction.mutate({
-                        leadId: lead.id,
+                        interesadoId: interesado.id,
                         type: "NOTE",
                         content: newNote,
                       });
@@ -167,9 +167,9 @@ export default function LeadDetailPage() {
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">Estado</h3>
             <select
-              value={lead.status}
+              value={interesado.status}
               onChange={(e) =>
-                updateStatus.mutate({ id: lead.id, status: e.target.value as "NEW" | "CONTACTED" | "QUALIFIED" | "NEGOTIATION" | "CLOSED_WON" | "CLOSED_LOST" })
+                updateStatus.mutate({ id: interesado.id, status: e.target.value as "NEW" | "CONTACTED" | "QUALIFIED" | "NEGOTIATION" | "CLOSED_WON" | "CLOSED_LOST" })
               }
               className="w-full rounded-lg border px-4 py-2 focus:border-red-500 focus:outline-none"
             >
@@ -191,10 +191,10 @@ export default function LeadDetailPage() {
                 <button
                   key={n}
                   onClick={() =>
-                    updateStatus.mutate({ id: lead.id, interestLevel: n })
+                    updateStatus.mutate({ id: interesado.id, interestLevel: n })
                   }
                   className={`h-8 w-8 rounded-full text-sm transition-colors ${
-                    lead.interestLevel && n <= lead.interestLevel
+                    interesado.interestLevel && n <= interesado.interestLevel
                       ? "bg-red-600 text-white"
                       : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                   }`}
@@ -211,11 +211,11 @@ export default function LeadDetailPage() {
               <CalendarClock className="h-5 w-5 text-gray-500" />
               Seguimiento
             </h3>
-            {lead.nextFollowUpAt ? (
+            {interesado.nextFollowUpAt ? (
               <p className="mb-3 text-sm text-gray-600">
                 Próximo seguimiento:{" "}
                 <span className="font-semibold">
-                  {new Date(lead.nextFollowUpAt).toLocaleDateString("es-PE", {
+                  {new Date(interesado.nextFollowUpAt).toLocaleDateString("es-PE", {
                     weekday: "long",
                     day: "2-digit",
                     month: "long",
@@ -229,15 +229,15 @@ export default function LeadDetailPage() {
             )}
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => scheduleFollowUp.mutate({ leadId: lead.id, days: 2 })}
+                onClick={() => scheduleFollowUp.mutate({ interesadoId: interesado.id, days: 2 })}
                 disabled={scheduleFollowUp.isPending}
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
               >
                 Programar en 2 días
               </button>
-              {lead.nextFollowUpAt && (
+              {interesado.nextFollowUpAt && (
                 <button
-                  onClick={() => clearFollowUp.mutate({ leadId: lead.id })}
+                  onClick={() => clearFollowUp.mutate({ interesadoId: interesado.id })}
                   className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   Completar seguimiento
@@ -246,17 +246,17 @@ export default function LeadDetailPage() {
             </div>
           </div>
 
-          {lead.property && (
+          {interesado.property && (
             <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
               <h3 className="mb-4 text-lg font-semibold text-gray-900">
                 Propiedad de interés
               </h3>
               <Link
-                href={`/properties/${lead.property.id}`}
+                href={`/properties/${interesado.property.id}`}
                 className="block rounded-lg border p-3 hover:bg-gray-50"
               >
-                <p className="font-medium text-gray-900">{lead.property.title}</p>
-                <p className="text-sm text-gray-500">{lead.property.city}</p>
+                <p className="font-medium text-gray-900">{interesado.property.title}</p>
+                <p className="text-sm text-gray-500">{interesado.property.city}</p>
               </Link>
             </div>
           )}
@@ -266,20 +266,20 @@ export default function LeadDetailPage() {
             <dl className="space-y-3">
               <div>
                 <dt className="text-sm text-gray-500">Fuente</dt>
-                <dd className="font-medium text-gray-900">{lead.source}</dd>
+                <dd className="font-medium text-gray-900">{interesado.source}</dd>
               </div>
-              {lead.budget && (
+              {interesado.budget && (
                 <div>
                   <dt className="text-sm text-gray-500">Presupuesto</dt>
                   <dd className="font-medium text-gray-900">
-                    S/ {lead.budget.toLocaleString()}
+                    S/ {interesado.budget.toLocaleString()}
                   </dd>
                 </div>
               )}
               <div>
                 <dt className="text-sm text-gray-500">Creado</dt>
                 <dd className="font-medium text-gray-900">
-                  {new Date(lead.createdAt).toLocaleDateString("es-PE")}
+                  {new Date(interesado.createdAt).toLocaleDateString("es-PE")}
                 </dd>
               </div>
             </dl>

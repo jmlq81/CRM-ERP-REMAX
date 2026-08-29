@@ -275,16 +275,16 @@ export default function PropertyDetailPage() {
             <h3 className="mb-4 text-lg font-semibold text-gray-900">
               Interesados en esta propiedad
             </h3>
-            {property.leads.length > 0 ? (
+            {property.interesados.length > 0 ? (
               <div className="space-y-2">
-                {property.leads.map((lead) => (
+                {property.interesados.map((interesado) => (
                   <Link
-                    key={lead.id}
-                    href={`/leads/${lead.id}`}
+                    key={interesado.id}
+                    href={`/interesados/${interesado.id}`}
                     className="block rounded-lg border p-3 hover:bg-gray-50"
                   >
-                    <p className="font-medium text-gray-900">{lead.name}</p>
-                    <p className="text-sm text-gray-500">{lead.email}</p>
+                    <p className="font-medium text-gray-900">{interesado.name}</p>
+                    <p className="text-sm text-gray-500">{interesado.email}</p>
                   </Link>
                 ))}
               </div>

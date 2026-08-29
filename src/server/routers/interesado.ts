@@ -1,7 +1,7 @@
-import { router, protectedProcedure, getUserRole } from "../trpc";
+import { router, protectedProcedure, getAuth } from "../trpc";
 import { z } from "zod";
 
-const leadRouter = router({
+const interesadoRouter = router({
   list: protectedProcedure
     .input(
       z.object({
@@ -13,12 +13,12 @@ const leadRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const role = await getUserRole(ctx);
-      const where: Record<string, unknown> = {};
-      if (input.agentId && role === "ADMIN") {
-        where.userId = input.agentId;
-      } else {
+      const auth = await getAuth(ctx);
+      const where: Record<string, unknown> = { companyId: auth.empresaId };
+      if (!auth.canSeeAll) {
         where.userId = ctx.session.user.id;
+      } else if (input.agentId) {
+        where.userId = input.agentId;
       }
 
       if (input.status) where.status = input.status;
@@ -30,29 +30,34 @@ const leadRouter = router({
         ];
       }
 
-      const [leads, total] = await Promise.all([
-        ctx.db.lead.findMany({
+      const [interesados, total] = await Promise.all([
+        ctx.db.interesado.findMany({
           where,
           include: { property: true, interactions: true },
           orderBy: { createdAt: "desc" },
           take: input.limit,
           skip: input.offset,
         }),
-        ctx.db.lead.count({ where }),
+        ctx.db.interesado.count({ where }),
       ]);
 
-      return { leads, total };
+      return { interesados, total };
     }),
 
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const lead = await ctx.db.lead.findFirst({
-        where: { id: input.id, userId: ctx.session.user.id },
+      const auth = await getAuth(ctx);
+      const interesado = await ctx.db.interesado.findFirst({
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
         include: { property: true, interactions: true, tasks: true },
       });
-      if (!lead) throw new Error("Lead no encontrado");
-      return lead;
+      if (!interesado) throw new Error("Interesado no encontrado");
+      return interesado;
     }),
 
   create: protectedProcedure
@@ -70,12 +75,14 @@ const leadRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       const { nextFollowUpAt, ...data } = input;
-      return ctx.db.lead.create({
+      return ctx.db.interesado.create({
         data: {
           ...data,
           nextFollowUpAt: nextFollowUpAt ? new Date(nextFollowUpAt) : undefined,
           userId: ctx.session.user.id,
+          companyId: auth.empresaId,
         },
       });
     }),
@@ -96,9 +103,14 @@ const leadRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       const { nextFollowUpAt, ...data } = input;
-      return ctx.db.lead.update({
-        where: { id: input.id, userId: ctx.session.user.id },
+      return ctx.db.interesado.update({
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
         data: {
           ...data,
           ...(nextFollowUpAt !== undefined
@@ -111,43 +123,64 @@ const leadRouter = router({
   addInteraction: protectedProcedure
     .input(
       z.object({
-        leadId: z.string(),
+        interesadoId: z.string(),
         type: z.enum(["CALL", "EMAIL", "SMS", "MEETING", "NOTE", "WHATSAPP"]),
         content: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      const interesado = await ctx.db.interesado.findFirst({
+        where: {
+          id: input.interesadoId,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
+      });
+      if (!interesado) throw new Error("Interesado no encontrado");
+      const { interesadoId, ...rest } = input;
       return ctx.db.interaction.create({
         data: {
-          ...input,
+          ...rest,
+          interesadoId,
           userId: ctx.session.user.id,
         },
       });
     }),
 
   scheduleFollowUp: protectedProcedure
-    .input(z.object({ leadId: z.string(), days: z.number().min(1).max(30).default(2) }))
+    .input(z.object({ interesadoId: z.string(), days: z.number().min(1).max(30).default(2) }))
     .mutation(async ({ ctx, input }) => {
-      const lead = await ctx.db.lead.findFirst({
-        where: { id: input.leadId, userId: ctx.session.user.id },
+      const auth = await getAuth(ctx);
+      const interesado = await ctx.db.interesado.findFirst({
+        where: {
+          id: input.interesadoId,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
       });
-      if (!lead) throw new Error("Lead no encontrado");
+      if (!interesado) throw new Error("Interesado no encontrado");
 
       const nextFollowUpAt = new Date();
       nextFollowUpAt.setDate(nextFollowUpAt.getDate() + input.days);
       nextFollowUpAt.setHours(9, 0, 0, 0);
 
-      return ctx.db.lead.update({
-        where: { id: lead.id },
+      return ctx.db.interesado.update({
+        where: { id: interesado.id },
         data: { nextFollowUpAt },
       });
     }),
 
   clearFollowUp: protectedProcedure
-    .input(z.object({ leadId: z.string() }))
+    .input(z.object({ interesadoId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.lead.update({
-        where: { id: input.leadId, userId: ctx.session.user.id },
+      const auth = await getAuth(ctx);
+      return ctx.db.interesado.update({
+        where: {
+          id: input.interesadoId,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
         data: { nextFollowUpAt: null },
       });
     }),
@@ -155,10 +188,15 @@ const leadRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.lead.delete({
-        where: { id: input.id, userId: ctx.session.user.id },
+      const auth = await getAuth(ctx);
+      return ctx.db.interesado.delete({
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
       });
     }),
 });
 
-export default leadRouter;
+export default interesadoRouter;

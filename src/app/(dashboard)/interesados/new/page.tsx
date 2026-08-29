@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 
-type LeadSource =
+type InteresadoSource =
   | "WEB"
   | "PHONE"
   | "EMAIL"
@@ -16,7 +16,7 @@ type LeadSource =
   | "WHATSAPP"
   | "OTHER";
 
-export default function NewLeadPage() {
+export default function NewInteresadoPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
 
@@ -25,7 +25,7 @@ export default function NewLeadPage() {
     name: string;
     email: string;
     phone: string;
-    source: LeadSource;
+    source: InteresadoSource;
     notes: string;
     budget: string;
     propertyId: string;
@@ -41,16 +41,16 @@ export default function NewLeadPage() {
     interestLevel: "",
   });
 
-  const createLead = trpc.lead.create.useMutation({
+  const createInteresado = trpc.interesado.create.useMutation({
     onSuccess: () => {
-      utils.lead.list.invalidate();
-      router.push("/leads");
+      utils.interesado.list.invalidate();
+      router.push("/interesados");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createLead.mutate({
+    createInteresado.mutate({
       name: form.name,
       email: form.email,
       phone: form.phone,
@@ -67,7 +67,7 @@ export default function NewLeadPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/leads" className="rounded-lg p-2 hover:bg-gray-100">
+        <Link href="/interesados" className="rounded-lg p-2 hover:bg-gray-100">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -122,7 +122,7 @@ export default function NewLeadPage() {
               </label>
               <select
                 value={form.source}
-                onChange={(e) => setForm({ ...form, source: e.target.value as LeadSource })}
+                onChange={(e) => setForm({ ...form, source: e.target.value as InteresadoSource })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none"
               >
                 <option value="WEB">Sitio Web</option>
@@ -196,18 +196,18 @@ export default function NewLeadPage() {
 
         <div className="flex justify-end gap-4">
           <Link
-            href="/leads"
+            href="/interesados"
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             Cancelar
           </Link>
           <button
             type="submit"
-            disabled={createLead.isPending}
+            disabled={createInteresado.isPending}
             className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            {createLead.isPending ? "Guardando..." : "Guardar Interesado"}
+            {createInteresado.isPending ? "Guardando..." : "Guardar Interesado"}
           </button>
         </div>
       </form>

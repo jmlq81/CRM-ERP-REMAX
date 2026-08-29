@@ -13,10 +13,10 @@ import {
 
 export default function ReportsPage() {
   const { data: properties } = trpc.property.list.useQuery({});
-  const { data: leads } = trpc.lead.list.useQuery({});
+  const { data: interesados } = trpc.interesado.list.useQuery({});
   const { data: tasks } = trpc.task.list.useQuery({});
 
-  if (!properties || !leads || !tasks) {
+  if (!properties || !interesados || !tasks) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="animate-spin h-8 w-8 rounded-full border-4 border-red-600 border-t-transparent" />
@@ -31,13 +31,13 @@ export default function ReportsPage() {
     0
   );
 
-  const newLeads = leads.leads.filter((l) => l.status === "NEW");
-  const wonLeads = leads.leads.filter((l) => l.status === "CLOSED_WON");
-  const conversionRate = leads.total > 0
-    ? ((wonLeads.length / leads.total) * 100).toFixed(1)
+  const newLeads = interesados.interesados.filter((l) => l.status === "NEW");
+  const wonLeads = interesados.interesados.filter((l) => l.status === "CLOSED_WON");
+  const conversionRate = interesados.total > 0
+    ? ((wonLeads.length / interesados.total) * 100).toFixed(1)
     : "0";
 
-  const completedTasks = tasks.filter((t) => t.completed);
+  const completedTasks = tasks.tasks.filter((t) => t.completed);
 
   const statusCount = (status: string) =>
     properties.properties.filter((p) => p.status === status).length;
@@ -144,12 +144,12 @@ export default function ReportsPage() {
           </h2>
           <div className="space-y-3">
             {[
-              { label: "Nuevos", value: leads.leads.filter((l) => l.status === "NEW").length, color: "text-blue-600" },
-              { label: "Contactados", value: leads.leads.filter((l) => l.status === "CONTACTED").length, color: "text-yellow-600" },
-              { label: "Calificados", value: leads.leads.filter((l) => l.status === "QUALIFIED").length, color: "text-purple-600" },
-              { label: "Negociación", value: leads.leads.filter((l) => l.status === "NEGOTIATION").length, color: "text-orange-600" },
+              { label: "Nuevos", value: interesados.interesados.filter((l) => l.status === "NEW").length, color: "text-blue-600" },
+              { label: "Contactados", value: interesados.interesados.filter((l) => l.status === "CONTACTED").length, color: "text-yellow-600" },
+              { label: "Calificados", value: interesados.interesados.filter((l) => l.status === "QUALIFIED").length, color: "text-purple-600" },
+              { label: "Negociación", value: interesados.interesados.filter((l) => l.status === "NEGOTIATION").length, color: "text-orange-600" },
               { label: "Cerrados Ganados", value: wonLeads.length, color: "text-green-600" },
-              { label: "Cerrados Perdidos", value: leads.leads.filter((l) => l.status === "CLOSED_LOST").length, color: "text-red-600" },
+              { label: "Cerrados Perdidos", value: interesados.interesados.filter((l) => l.status === "CLOSED_LOST").length, color: "text-red-600" },
             ].map((item) => (
               <div
                 key={item.label}
@@ -175,11 +175,11 @@ export default function ReportsPage() {
             <p className="text-sm text-gray-500">Total Propiedades</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{leads.total}</p>
+            <p className="text-3xl font-bold text-gray-900">{interesados.total}</p>
             <p className="text-sm text-gray-500">Total interesados</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{tasks.length}</p>
+            <p className="text-3xl font-bold text-gray-900">{tasks.tasks.length}</p>
             <p className="text-sm text-gray-500">
               Tareas ({completedTasks.length} completadas)
             </p>

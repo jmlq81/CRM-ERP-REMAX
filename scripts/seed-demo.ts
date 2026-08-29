@@ -14,6 +14,8 @@ async function main() {
   });
 
   const ownerId = admin.id;
+  if (!admin.companyId) throw new Error("El usuario ADMIN no tiene empresa asignada");
+  const companyId = admin.companyId;
 
   const p1 = await db.property.create({
     data: {
@@ -41,6 +43,7 @@ async function main() {
       featuredText1: "¡Departamento con vista al mar!",
       featuredText2: "2 cuadras del Malecón de Miraflores",
       userId: ownerId,
+      companyId,
     },
   });
 
@@ -70,10 +73,11 @@ async function main() {
       featuredText1: "Casa familiar con jardín en Surco",
       featuredText2: "Lista para entrega inmediata",
       userId: ownerId,
+      companyId,
     },
   });
 
-  const lead1 = await db.lead.create({
+  const lead1 = await db.interesado.create({
     data: {
       name: "María Fernanda Torres",
       email: "mfernanda.torres@gmail.com",
@@ -86,11 +90,12 @@ async function main() {
       interestLevel: 8,
       nextFollowUpAt: new Date(Date.now() + 2 * 86400000),
       userId: ownerId,
+      companyId,
       propertyId: p1.id,
     },
   });
 
-  const lead2 = await db.lead.create({
+  const lead2 = await db.interesado.create({
     data: {
       name: "Carlos Mendoza",
       email: "cmendoza@outlook.com",
@@ -103,6 +108,7 @@ async function main() {
       interestLevel: 6,
       nextFollowUpAt: new Date(Date.now() + 1 * 86400000),
       userId: ownerId,
+      companyId,
     },
   });
 
@@ -113,7 +119,8 @@ async function main() {
       dueDate: new Date(Date.now() + 1 * 86400000),
       priority: "HIGH",
       userId: ownerId,
-      leadId: lead1.id,
+      companyId,
+      interesadoId: lead1.id,
       propertyId: p1.id,
     },
   });
@@ -122,7 +129,7 @@ async function main() {
     data: {
       type: "NOTE",
       content: "Primer contacto por Messenger. Le envié fotos y el video. Quiere verlo en persona esta semana.",
-      leadId: lead1.id,
+      interesadoId: lead1.id,
       userId: ownerId,
     },
   });
@@ -131,13 +138,14 @@ async function main() {
     data: {
       title: "Venta Dpto Miraflores",
       propertyId: p1.id,
-      leadId: lead1.id,
+      interesadoId: lead1.id,
       status: "NEGOTIATION",
       commissionPct: 3,
       notes: partner
         ? "Operación compartida: agente principal (60%) + co-broker (40%)."
         : "Operación en negociación. Cliente evaluando financiamiento.",
       createdById: ownerId,
+      companyId,
       participants: {
         create: [
           { userId: ownerId, role: "PRIMARY", sharePct: 60 },
@@ -167,6 +175,7 @@ async function main() {
       totalCommission: String(totalCommission),
       notes: partner ? "Cierre con co-broker. Propiedad entregada al comprador." : "Cierre exitoso. Propiedad entregada.",
       createdById: ownerId,
+      companyId,
       participants: {
         create: shares.map((s) => ({
           userId: s.userId,
@@ -177,6 +186,7 @@ async function main() {
       commissions: {
         create: shares.map((s) => ({
           userId: s.userId,
+          companyId,
           amount: String(Math.round(s.amount)),
           currency: "PEN",
           status: "PENDING",
@@ -188,7 +198,7 @@ async function main() {
 
   console.log("=== DATOS DE EJEMPLO CREADOS ===");
   console.log("Propiedades:", p1.title, "|", p2.title);
-  console.log("Leads:", lead1.name, "|", lead2.name);
+  console.log("Interesados:", lead1.name, "|", lead2.name);
   console.log("Operación en negociación:", deal1.title);
   console.log(
     "Operación cerrada (GANADA):",
@@ -201,7 +211,7 @@ async function main() {
     console.log("Co-broker participante:", partner.name || partner.email);
   }
   console.log("1 tarea pendiente + 1 interacción creadas.");
-  console.log("Tip: el dashboard ya mostrará propiedades, leads, comisiones pendientes y tareas.");
+  console.log("Tip: el dashboard ya mostrará propiedades, interesados, comisiones pendientes y tareas.");
 }
 
 main()

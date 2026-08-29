@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, getAuth } from "../trpc";
 import { z } from "zod";
 
 const taskRouter = router({
@@ -10,15 +10,20 @@ const taskRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const where: Record<string, unknown> = { userId: ctx.session.user.id };
+      const auth = await getAuth(ctx);
+      const where: Record<string, unknown> = { companyId: auth.empresaId };
+      if (!auth.canSeeAll) {
+        where.userId = ctx.session.user.id;
+      }
       if (input.completed !== undefined) where.completed = input.completed;
 
-      return ctx.db.task.findMany({
+      const tasks = await ctx.db.task.findMany({
         where,
-        include: { lead: true, property: true },
+        include: { interesado: true, property: true },
         orderBy: [{ completed: "asc" }, { dueDate: "asc" }],
         take: input.limit,
       });
+      return { tasks };
     }),
 
   create: protectedProcedure
@@ -28,16 +33,18 @@ const taskRouter = router({
         description: z.string().optional(),
         dueDate: z.string().datetime().optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
-        leadId: z.string().optional(),
+        interesadoId: z.string().optional(),
         propertyId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       return ctx.db.task.create({
         data: {
           ...input,
           dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
           userId: ctx.session.user.id,
+          companyId: auth.empresaId,
         },
       });
     }),
@@ -45,8 +52,13 @@ const taskRouter = router({
   toggleComplete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       const task = await ctx.db.task.findFirst({
-        where: { id: input.id, userId: ctx.session.user.id },
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
       });
       if (!task) throw new Error("Tarea no encontrada");
       return ctx.db.task.update({
@@ -58,8 +70,13 @@ const taskRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       return ctx.db.task.delete({
-        where: { id: input.id, userId: ctx.session.user.id },
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
       });
     }),
 });

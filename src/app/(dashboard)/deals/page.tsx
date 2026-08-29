@@ -93,7 +93,7 @@ export default function DealsPage() {
                       <MapPin className="h-3 w-3" />
                       {deal.property.title}
                     </span>
-                    {deal.lead && <span>{deal.lead.name}</span>}
+                    {deal.interesado && <span>{deal.interesado.name}</span>}
                   </div>
                   <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
                     {deal.participants.map((p) => (

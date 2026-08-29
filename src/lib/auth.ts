@@ -40,9 +40,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = (user?.id ?? token.sub) as string;
         const dbUser = await db.user.findUnique({
           where: { id: session.user.id },
-          select: { role: true },
+          select: { role: true, activeCompanyId: true },
         });
         session.user.role = dbUser?.role ?? "AGENT";
+        session.user.activeCompanyId = dbUser?.activeCompanyId ?? undefined;
       }
       return session;
     },
@@ -78,7 +79,8 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      role?: "ADMIN" | "AGENT";
+      role?: "ADMIN" | "OWNER" | "AGENT";
+      activeCompanyId?: string;
     };
   }
 }

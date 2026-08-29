@@ -157,7 +157,7 @@ export default function DealDetailPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Cliente</p>
-                <p className="font-medium text-gray-900">{deal.lead?.name || "Sin cliente"}</p>
+                <p className="font-medium text-gray-900">{deal.interesado?.name || "Sin cliente"}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Agente principal</p>

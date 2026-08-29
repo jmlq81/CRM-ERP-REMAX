@@ -55,11 +55,11 @@ function InterestLevel({ level }: { level: number | null }) {
   );
 }
 
-export default function LeadsPage() {
+export default function InteresadosPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
-  const { data, isLoading } = trpc.lead.list.useQuery({
+  const { data, isLoading } = trpc.interesado.list.useQuery({
     search: search || undefined,
     status: status || undefined,
   });
@@ -72,7 +72,7 @@ export default function LeadsPage() {
           <p className="text-gray-600">Gestiona tus contactos y prospectos</p>
         </div>
         <Link
-          href="/leads/new"
+          href="/interesados/new"
           className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
         >
           <Plus className="h-4 w-4" />
@@ -117,31 +117,31 @@ export default function LeadsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {data?.leads.map((lead) => (
+          {data?.interesados.map((interesado) => (
             <Link
-              key={lead.id}
-              href={`/leads/${lead.id}`}
+              key={interesado.id}
+              href={`/interesados/${interesado.id}`}
               className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 transition-shadow hover:shadow-md"
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
                   <span className="text-lg font-semibold">
-                    {lead.name.charAt(0).toUpperCase()}
+                    {interesado.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{lead.name}</h3>
+                  <h3 className="font-semibold text-gray-900">{interesado.name}</h3>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
-                    {lead.email && (
+                    {interesado.email && (
                       <span className="flex items-center gap-1">
                         <Mail className="h-3 w-3" />
-                        {lead.email}
+                        {interesado.email}
                       </span>
                     )}
-                    {lead.phone && (
+                    {interesado.phone && (
                       <span className="flex items-center gap-1">
                         <Phone className="h-3 w-3" />
-                        {lead.phone}
+                        {interesado.phone}
                       </span>
                     )}
                   </div>
@@ -149,19 +149,19 @@ export default function LeadsPage() {
               </div>
 
               <div className="flex items-center gap-4">
-                {lead.property && (
+                {interesado.property && (
                   <span className="text-sm text-gray-500">
-                    {lead.property.title}
+                    {interesado.property.title}
                   </span>
                 )}
-                <InterestLevel level={lead.interestLevel} />
-                <FollowUpBadge date={lead.nextFollowUpAt as string | null} />
+                <InterestLevel level={interesado.interestLevel} />
+                <FollowUpBadge date={interesado.nextFollowUpAt as string | null} />
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    statusColors[lead.status] || "bg-gray-100 text-gray-700"
+                    statusColors[interesado.status] || "bg-gray-100 text-gray-700"
                   }`}
                 >
-                  {statusLabels[lead.status] || lead.status}
+                  {statusLabels[interesado.status] || interesado.status}
                 </span>
               </div>
             </Link>
@@ -169,7 +169,7 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {data?.leads.length === 0 && (
+      {data?.interesados.length === 0 && (
         <div className="rounded-xl bg-white p-12 text-center shadow-sm ring-1 ring-gray-950/5">
           <h3 className="mt-4 text-lg font-semibold text-gray-900">
             No hay interesados
@@ -178,7 +178,7 @@ export default function LeadsPage() {
             Comienza agregando tu primer interesado
           </p>
           <Link
-            href="/leads/new"
+            href="/interesados/new"
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
             <Plus className="h-4 w-4" />

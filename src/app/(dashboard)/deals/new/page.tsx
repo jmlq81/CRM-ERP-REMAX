@@ -15,7 +15,7 @@ interface Participant {
 function NewDealContent() {
   const router = useRouter();
   const { data: properties, isLoading: loadingProps } = trpc.property.list.useQuery({});
-  const { data: leads } = trpc.lead.list.useQuery({});
+  const { data: interesados } = trpc.interesado.list.useQuery({});
   const { data: agents } = trpc.agent.listSimple.useQuery();
   const { data: me } = trpc.user.me.useQuery();
   const searchParams = useSearchParams();
@@ -23,7 +23,7 @@ function NewDealContent() {
   const [form, setForm] = useState({
     title: "",
     propertyId: searchParams.get("propertyId") ?? "",
-    leadId: "",
+    interesadoId: "",
     salePrice: "",
     commissionPct: "3",
     notes: "",
@@ -75,7 +75,7 @@ function NewDealContent() {
     createDeal.mutate({
       title: form.title.trim(),
       propertyId: form.propertyId,
-      leadId: form.leadId || undefined,
+      interesadoId: form.interesadoId || undefined,
       salePrice: form.salePrice ? Number(form.salePrice) : undefined,
       commissionPct: form.commissionPct ? Number(form.commissionPct) : undefined,
       notes: form.notes || undefined,
@@ -152,12 +152,12 @@ function NewDealContent() {
               Cliente (interesado)
             </label>
             <select
-              value={form.leadId}
-              onChange={(e) => setForm({ ...form, leadId: e.target.value })}
+              value={form.interesadoId}
+              onChange={(e) => setForm({ ...form, interesadoId: e.target.value })}
               className="w-full rounded-lg border bg-white px-4 py-2 text-sm focus:border-red-500 focus:outline-none"
             >
               <option value="">Sin cliente asociado</option>
-              {leads?.leads.map((l) => (
+              {interesados?.interesados.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name}
                 </option>

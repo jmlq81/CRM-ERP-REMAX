@@ -15,6 +15,9 @@ const userRouter = router({
         phone: true,
         agency: true,
         bio: true,
+        companyId: true,
+        activeCompanyId: true,
+        company: { select: { id: true, name: true } },
         passwordHash: true,
       },
     });

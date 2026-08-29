@@ -40,8 +40,8 @@ export default function TasksPage() {
     onSuccess: () => utils.task.list.invalidate(),
   });
 
-  const pendingTasks = tasks?.filter((t) => !t.completed) ?? [];
-  const completedTasks = tasks?.filter((t) => t.completed) ?? [];
+  const pendingTasks = tasks?.tasks?.filter((t) => !t.completed) ?? [];
+  const completedTasks = tasks?.tasks?.filter((t) => t.completed) ?? [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

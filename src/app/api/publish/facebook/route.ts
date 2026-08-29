@@ -98,6 +98,7 @@ export async function POST(req: Request) {
         externalId: result.id,
         propertyId: property.id,
         userId: session.user.id,
+        companyId: property.companyId,
         publishedAt: new Date(),
       },
     });

@@ -1,4 +1,4 @@
-import { router, protectedProcedure, getUserRole } from "../trpc";
+import { router, protectedProcedure, getAuth } from "../trpc";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 
@@ -24,12 +24,12 @@ const propertyRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const role = await getUserRole(ctx);
-      const where: Record<string, unknown> = {};
-      if (input.agentId && role === "ADMIN") {
-        where.userId = input.agentId;
-      } else {
+      const auth = await getAuth(ctx);
+      const where: Record<string, unknown> = { companyId: auth.empresaId };
+      if (!auth.canSeeAll) {
         where.userId = ctx.session.user.id;
+      } else if (input.agentId) {
+        where.userId = input.agentId;
       }
 
       if (input.city) where.city = input.city;
@@ -65,11 +65,16 @@ const propertyRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       const property = await ctx.db.property.findFirst({
-        where: { id: input.id, userId: ctx.session.user.id },
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
         include: {
           photos: true,
-          leads: true,
+          interesados: true,
           publications: true,
           deals: {
             include: {
@@ -117,17 +122,35 @@ const propertyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      const company = await ctx.db.company.findUnique({
+        where: { id: auth.empresaId },
+        select: { maxProperties: true },
+      });
+      if (company?.maxProperties != null) {
+        const count = await ctx.db.property.count({ where: { companyId: auth.empresaId } });
+        if (count >= company.maxProperties) {
+          throw new Error(
+            `Se alcanzó el tope de ${company.maxProperties} propiedades para esta empresa (para cotización de servicio por empresa)`
+          );
+        }
+      }
       return ctx.db.property.create({
-        data: { ...input, userId: ctx.session.user.id },
+        data: { ...input, userId: ctx.session.user.id, companyId: auth.empresaId },
       });
     }),
 
   update: protectedProcedure
     .input(z.object({ id: z.string() }).passthrough())
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       const { id, ...data } = input;
       return ctx.db.property.update({
-        where: { id, userId: ctx.session.user.id },
+        where: {
+          id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
         data,
       });
     }),
@@ -135,18 +158,28 @@ const propertyRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       return ctx.db.property.delete({
-        where: { id: input.id, userId: ctx.session.user.id },
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
       });
     }),
 
   deletePhoto: protectedProcedure
     .input(z.object({ photoId: z.string(), propertyId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
       const photo = await ctx.db.propertyPhoto.findFirst({
         where: {
           id: input.photoId,
-          property: { id: input.propertyId, userId: ctx.session.user.id },
+          property: {
+            id: input.propertyId,
+            companyId: auth.empresaId,
+            ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+          },
         },
       });
       if (!photo) throw new Error("Foto no encontrada");
