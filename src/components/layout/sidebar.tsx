@@ -25,7 +25,7 @@ export function Sidebar() {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Propiedades", href: "/properties", icon: Home },
-    { name: "Leads", href: "/leads", icon: Users },
+    { name: "Interesados", href: "/leads", icon: Users },
     { name: "Operaciones", href: "/deals", icon: Handshake },
     { name: "Tareas", href: "/tasks", icon: CheckSquare },
     { name: "Publicar", href: "/publish", icon: Globe },

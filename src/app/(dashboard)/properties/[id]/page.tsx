@@ -273,7 +273,7 @@ export default function PropertyDetailPage() {
 
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
             <h3 className="mb-4 text-lg font-semibold text-gray-900">
-              Leads interesados
+              Interesados en esta propiedad
             </h3>
             {property.leads.length > 0 ? (
               <div className="space-y-2">
@@ -289,7 +289,7 @@ export default function PropertyDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No hay leads registrados</p>
+              <p className="text-sm text-gray-500">No hay interesados registrados</p>
             )}
           </div>
 

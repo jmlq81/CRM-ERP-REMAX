@@ -48,7 +48,7 @@ export default function DashboardPage() {
       color: "bg-blue-500",
     },
     {
-      name: "Leads Totales",
+      name: "Interesados Totales",
       value: leads?.total ?? 0,
       icon: Users,
       color: "bg-green-500",
@@ -124,7 +124,7 @@ export default function DashboardPage() {
           ) : (
             <p className="text-sm text-gray-500">
               No hay seguimientos vencidos. Programe el próximo contacto de cada
-              lead desde su ficha.
+              interesado desde su ficha.
             </p>
           )}
         </div>

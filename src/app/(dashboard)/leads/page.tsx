@@ -68,7 +68,7 @@ export default function LeadsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Interesados</h1>
           <p className="text-gray-600">Gestiona tus contactos y prospectos</p>
         </div>
         <Link
@@ -76,7 +76,7 @@ export default function LeadsPage() {
           className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
         >
           <Plus className="h-4 w-4" />
-          Nuevo Lead
+          Nuevo Interesado
         </Link>
       </div>
 
@@ -172,17 +172,17 @@ export default function LeadsPage() {
       {data?.leads.length === 0 && (
         <div className="rounded-xl bg-white p-12 text-center shadow-sm ring-1 ring-gray-950/5">
           <h3 className="mt-4 text-lg font-semibold text-gray-900">
-            No hay leads
+            No hay interesados
           </h3>
           <p className="mt-2 text-gray-500">
-            Comienza agregando tu primer lead
+            Comienza agregando tu primer interesado
           </p>
           <Link
             href="/leads/new"
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Lead
+            Nuevo Interesado
           </Link>
         </div>
       )}

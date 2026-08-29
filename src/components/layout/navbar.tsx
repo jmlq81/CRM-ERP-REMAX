@@ -27,7 +27,7 @@ export function Navbar() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar propiedades, leads..."
+            placeholder="Buscar propiedades, interesados..."
             className="w-96 rounded-lg border bg-gray-50 py-2 pl-10 pr-4 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
           />
         </div>

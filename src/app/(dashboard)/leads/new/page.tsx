@@ -71,8 +71,8 @@ export default function NewLeadPage() {
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Nuevo Lead</h1>
-          <p className="text-gray-600">Agrega un nuevo contacto a tu CRM</p>
+          <h1 className="text-2xl font-bold text-gray-900">Nuevo Interesado</h1>
+          <p className="text-gray-600">Agrega un nuevo interesado a tu CRM</p>
         </div>
       </div>
 
@@ -207,7 +207,7 @@ export default function NewLeadPage() {
             className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            {createLead.isPending ? "Guardando..." : "Guardar Lead"}
+            {createLead.isPending ? "Guardando..." : "Guardar Interesado"}
           </button>
         </div>
       </form>

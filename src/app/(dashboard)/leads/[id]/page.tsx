@@ -71,9 +71,9 @@ export default function LeadDetailPage() {
   if (!lead) {
     return (
       <div className="text-center">
-        <p className="text-gray-500">Lead no encontrado</p>
+        <p className="text-gray-500">Interesado no encontrado</p>
         <Link href="/leads" className="text-red-600 hover:underline">
-          Volver a leads
+          Volver a interesados
         </Link>
       </div>
     );

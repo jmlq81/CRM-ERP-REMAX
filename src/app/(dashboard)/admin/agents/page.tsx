@@ -97,7 +97,7 @@ export default function AdminAgentsPage() {
           <p className="mt-1 text-2xl font-bold text-gray-900">{totals?.properties ?? 0}</p>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5">
-          <p className="text-sm text-gray-500">Leads activos</p>
+          <p className="text-sm text-gray-500">Interesados activos</p>
           <p className="mt-1 text-2xl font-bold text-gray-900">{totals?.leads ?? 0}</p>
         </div>
         <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5">
@@ -165,7 +165,7 @@ export default function AdminAgentsPage() {
                       {agent.stats.activeLeads}
                       <span className="text-xs font-normal text-gray-400">/ {agent.stats.leads}</span>
                     </p>
-                    <p className="text-xs text-gray-500">Leads</p>
+                    <p className="text-xs text-gray-500">Interesados</p>
                   </div>
                   <div>
                     <p className="flex items-center justify-center gap-1 text-sm font-semibold text-gray-900">

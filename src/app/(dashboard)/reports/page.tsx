@@ -82,7 +82,7 @@ export default function ReportsPage() {
               <Users className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Leads Nuevos</p>
+              <p className="text-sm text-gray-500">Interesados Nuevos</p>
               <p className="text-xl font-bold text-gray-900">{newLeads.length}</p>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default function ReportsPage() {
 
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Leads por Estado
+            Interesados por Estado
           </h2>
           <div className="space-y-3">
             {[
@@ -176,7 +176,7 @@ export default function ReportsPage() {
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-gray-900">{leads.total}</p>
-            <p className="text-sm text-gray-500">Total Leads</p>
+            <p className="text-sm text-gray-500">Total interesados</p>
           </div>
           <div className="text-center">
             <p className="text-3xl font-bold text-gray-900">{tasks.length}</p>
