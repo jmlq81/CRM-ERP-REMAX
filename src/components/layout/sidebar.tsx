@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import {
@@ -131,7 +131,11 @@ export function Sidebar({
             Configuración
           </Link>
           <button
-            onClick={() => signOut()}
+            onClick={() => {
+              void fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+                window.location.href = "/login";
+              });
+            }}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white"
           >
             <LogOut className="h-5 w-5" />
