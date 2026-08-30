@@ -18,10 +18,12 @@ function RegisterContent() {
       <div className="w-full max-w-md space-y-8 p-8 text-center">
         <Home className="mx-auto h-12 w-12 text-red-500" />
         <h2 className="text-2xl font-bold text-gray-900">
-          La creación de cuentas se realiza con Google
+          Empieza por tu cuenta de Google
         </h2>
         <p className="text-gray-600">
-          Utiliza tu cuenta de Google para registrarte en el CRM.
+          En tu primer ingreso podrás crear tu empresa y convertirte en el
+          dueño. Los agentes no se registran por su cuenta: el dueño los crea
+          con su correo y contraseña.
         </p>
         <Link
           href="/login"

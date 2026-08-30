@@ -1,9 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
 import { TRPCProvider } from "@/lib/trpc-provider";
+import { trpc } from "@/lib/trpc";
+
+function NoCompanyRedirect() {
+  const router = useRouter();
+  const me = trpc.user.me.useQuery();
+  useEffect(() => {
+    if (!me.isLoading && me.data && !me.data.companyId) {
+      router.replace("/bienvenido");
+    }
+  }, [me.data, me.isLoading, router]);
+  return null;
+}
 
 export default function DashboardLayout({
   children,
@@ -14,6 +27,7 @@ export default function DashboardLayout({
 
   return (
     <TRPCProvider>
+      <NoCompanyRedirect />
       <div className="flex h-screen">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex flex-1 flex-col overflow-hidden">

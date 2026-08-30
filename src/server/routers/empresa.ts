@@ -93,6 +93,45 @@ const empresaRouter = router({
       return { empresaId: input.empresaId, nombre: empresa.name };
     }),
 
+  createForMe: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1, "Nombre requerido"),
+        ruc: rucSchema,
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({ where: { id: ctx.session.user.id } });
+      if (!user) throw new Error("Usuario no encontrado");
+      if (user.companyId) throw new Error("Tu cuenta ya pertenece a una empresa");
+
+      const [existingRuc, existingCompany] = await Promise.all([
+        ctx.db.company.findUnique({ where: { ruc: input.ruc } }),
+        ctx.db.company.findFirst({ where: { name: { equals: input.name, mode: "insensitive" } } }),
+      ]);
+      if (existingRuc) throw new Error("Ya existe una empresa con ese RUC");
+      if (existingCompany) throw new Error("Ya existe una empresa con ese nombre");
+
+      const empresa = await ctx.db.$transaction(async (tx) => {
+        const created = await tx.company.create({
+          data: {
+            name: input.name,
+            ruc: input.ruc,
+            maxAgents: 5,
+            maxProperties: 30,
+            users: { connect: { id: user.id } },
+          },
+        });
+        await tx.user.update({
+          where: { id: user.id },
+          data: { role: "OWNER", activeCompanyId: created.id },
+        });
+        return created;
+      });
+
+      return { id: empresa.id, name: empresa.name, ruc: empresa.ruc };
+    }),
+
   create: adminProcedure
     .input(
       z.object({
