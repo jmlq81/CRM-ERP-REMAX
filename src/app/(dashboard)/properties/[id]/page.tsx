@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
+import { ValuationCard } from "@/components/ValuationCard";
 import {
   ArrowLeft,
   MapPin,
@@ -248,6 +249,14 @@ export default function PropertyDetailPage() {
               )}
             </div>
           </div>
+
+          <ValuationCard
+            propertyId={property.id}
+            price={Number(property.price)}
+            currency={property.currency}
+            area={property.area}
+            propertyUserId={property.userId}
+          />
         </div>
 
         <div className="space-y-6">
@@ -255,6 +264,11 @@ export default function PropertyDetailPage() {
             <p className="text-sm text-gray-500">Precio</p>
             <p className="text-3xl font-bold text-red-600">
               {formatCurrency(Number(property.price), property.currency)}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              {property.area && property.area > 0
+                ? `${formatCurrency(Number(property.price) / property.area, property.currency)} / m²`
+                : "Sin área registrada"}
             </p>
             <div className="mt-4">
               <span

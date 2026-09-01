@@ -190,6 +190,180 @@ const propertyRouter = router({
       }
       return { success: true };
     }),
+
+  valuationsByProperty: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      const property = await ctx.db.property.findFirst({
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
+        select: { id: true },
+      });
+      if (!property) throw new Error("Propiedad no encontrada");
+      const valuations = await ctx.db.valuation.findMany({
+        where: { propertyId: property.id },
+        include: { user: { select: { id: true, name: true, image: true } } },
+        orderBy: { valuedAt: "desc" },
+        take: 20,
+      });
+      return valuations.map((v) => ({
+        id: v.id,
+        marketValue: Number(v.marketValue),
+        currency: v.currency,
+        source: v.source,
+        notes: v.notes,
+        valuedAt: v.valuedAt,
+        userId: v.user.id,
+        userName: v.user.name,
+      }));
+    }),
+
+  registerValuation: protectedProcedure
+    .input(
+      z.object({
+        propertyId: z.string(),
+        marketValue: z.number().positive(),
+        source: z.enum(["INSPECTION", "MARKET", "CLIENT", "OTHER"]).default("INSPECTION"),
+        notes: z.string().optional(),
+        valuedAt: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      const property = await ctx.db.property.findFirst({
+        where: {
+          id: input.propertyId,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
+        select: { id: true, currency: true },
+      });
+      if (!property) throw new Error("Propiedad no encontrada");
+      return ctx.db.valuation.create({
+        data: {
+          propertyId: property.id,
+          companyId: auth.empresaId,
+          userId: ctx.session.user.id,
+          marketValue: input.marketValue,
+          currency: property.currency,
+          source: input.source,
+          notes: input.notes,
+          valuedAt: input.valuedAt ? new Date(input.valuedAt) : new Date(),
+        },
+      });
+    }),
+
+  deleteValuation: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      const valuation = await ctx.db.valuation.findFirst({
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          OR: [
+            { userId: ctx.session.user.id },
+            ...(auth.canSeeAll
+              ? [{ property: { companyId: auth.empresaId } }]
+              : []),
+          ],
+        },
+      });
+      if (!valuation) throw new Error("Valoración no encontrada");
+      await ctx.db.valuation.delete({ where: { id: valuation.id } });
+      return { success: true };
+    }),
+
+  marketEstimate: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      const property = await ctx.db.property.findFirst({
+        where: {
+          id: input.id,
+          companyId: auth.empresaId,
+          ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
+        },
+      });
+      if (!property) throw new Error("Propiedad no encontrada");
+      if (!property.area) {
+        return {
+          estimatedValue: null,
+          avgPricePerM2: null,
+          comparablesCount: 0,
+          level: null,
+          range: null,
+        };
+      }
+
+      const area = property.area;
+      const baseWhere: Record<string, unknown> = {
+        id: { not: property.id },
+        companyId: auth.empresaId,
+        status: "ACTIVE" as const,
+        price: { not: null },
+        area: { gte: area * 0.7, lte: area * 1.3 },
+      };
+
+      const levels = [
+        { name: "distrito", where: { type: property.type, district: property.district ?? undefined } },
+        { name: "ciudad-sin-area", where: { type: property.type, city: property.city } },
+        { name: "ciudad", where: { city: property.city } },
+        { name: "empresa", where: {} },
+      ];
+
+      let matches: Array<{ price: number; area: number }> = [];
+      let level: string | null = null;
+
+      for (const l of levels) {
+        const where = { ...baseWhere, ...l.where };
+        const rows = await ctx.db.property.findMany({
+          where,
+          select: { price: true, area: true },
+          take: 60,
+        });
+        const withArea = rows
+          .filter((r) => r.area && r.area > 0)
+          .map((r) => ({ price: Number(r.price), area: r.area as number }));
+        if (withArea.length >= 3) {
+          matches = withArea.slice(0, 40);
+          level = l.name;
+          break;
+        }
+        if (withArea.length > 0 && level === null) {
+          matches = withArea.slice(0, 40);
+          level = l.name + "-parcial";
+        }
+      }
+
+      if (matches.length === 0) {
+        return {
+          estimatedValue: null,
+          avgPricePerM2: null,
+          comparablesCount: 0,
+          level: null,
+          range: null,
+        };
+      }
+
+      const pricesPerM2 = matches.map((m) => m.price / m.area);
+      const avg = pricesPerM2.reduce((a, b) => a + b, 0) / pricesPerM2.length;
+      const estimated = avg * area;
+      return {
+        estimatedValue: Math.round(estimated),
+        avgPricePerM2: Math.round(avg),
+        comparablesCount: matches.length,
+        level,
+        range: {
+          min: Math.round(estimated * 0.9),
+          max: Math.round(estimated * 1.1),
+        },
+      };
+    }),
 });
 
 export default propertyRouter;
