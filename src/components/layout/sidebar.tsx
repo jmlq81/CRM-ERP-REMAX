@@ -116,9 +116,12 @@ export function Sidebar({
                 <p className="truncate text-xs font-medium text-white">
                   {empresa.nombre}
                 </p>
-                <p className="text-[10px] text-gray-400">
-                  {empresa.rol === "ADMIN" ? "Administrador" : empresa.rol === "OWNER" ? "Dueño" : "Agente"}
-                </p>
+<p className="text-[10px] text-gray-400">
+                {empresa.rol === "ADMIN" ? "Administrador de plataforma" : empresa.rol === "OWNER" ? "Dueño" : "Agente"}
+              </p>
+              {empresa.ruc && (
+                <p className="truncate text-[10px] text-gray-500">RUC {empresa.ruc}</p>
+              )}
               </div>
             </div>
           )}

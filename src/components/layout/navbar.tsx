@@ -75,6 +75,7 @@ export function Navbar({ onMenuClick }: { onMenuClick: () => void }) {
             </p>
             <p className="text-xs text-gray-500">
               {user?.company?.name || "RE/MAX"}
+              {user?.role && ` · ${user.role === "ADMIN" ? "Administrador" : user.role === "OWNER" ? "Dueño" : "Agente"}`}
             </p>
           </div>
         </Link>
