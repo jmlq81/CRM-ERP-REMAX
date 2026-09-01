@@ -49,10 +49,16 @@ function ProfileForm({ user }: { user: MeUser }) {
             className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
               user.role === "ADMIN"
                 ? "bg-purple-100 text-purple-700"
+                : user.role === "OWNER"
+                ? "bg-amber-100 text-amber-700"
                 : "bg-gray-100 text-gray-600"
             }`}
           >
-            {user.role === "ADMIN" ? "Administrador" : "Agente"}
+            {user.role === "ADMIN"
+              ? "Administrador"
+              : user.role === "OWNER"
+              ? "Dueño"
+              : "Agente"}
           </span>
         </div>
       </div>
