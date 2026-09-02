@@ -50,7 +50,7 @@ export default function NewPropertyPage() {
     currency: form.currency as "PEN" | "USD" | "EUR",
     address: form.address,
     city: form.city,
-    district: form.district || undefined,
+    district: form.district,
     state: form.state || undefined,
     country: form.country,
     bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
@@ -69,9 +69,8 @@ export default function NewPropertyPage() {
     parking: form.parking ? Number(form.parking) : undefined,
     floors: form.floors ? Number(form.floors) : undefined,
     videoUrl: form.videoUrl || undefined,
-    contactName: form.contactName || undefined,
-    contactPhone: form.contactPhone || undefined,
-    featuredText1: form.featuredText1 || undefined,
+    contactName: form.contactName,
+    contactPhone: form.contactPhone,    featuredText1: form.featuredText1 || undefined,
     featuredText2: form.featuredText2 || undefined,
   });
 
@@ -229,13 +228,14 @@ export default function NewPropertyPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Distrito
+                Distrito *
               </label>
               <input
                 type="text"
                 value={form.district}
                 onChange={(e) => setForm({ ...form, district: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                required
               />
             </div>
             <div>
@@ -394,24 +394,26 @@ export default function NewPropertyPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Nombre de contacto (L8)
+                Nombre de contacto (L8) *
               </label>
               <input
                 type="text"
                 value={form.contactName}
                 onChange={(e) => setForm({ ...form, contactName: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Teléfono de contacto (L9)
+                Teléfono de contacto (L9) *
               </label>
               <input
                 type="tel"
                 value={form.contactPhone}
                 onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                required
               />
             </div>
           </div>

@@ -101,7 +101,7 @@ const propertyRouter = router({
         currency: z.enum(["PEN", "USD", "EUR"]).default("PEN"),
         address: z.string().min(1),
         city: z.string().min(1),
-        district: z.string().optional(),
+        district: z.string().min(1),
         state: z.string().optional(),
         country: z.string().default("Peru"),
         latitude: z.number().optional(),
@@ -115,8 +115,8 @@ const propertyRouter = router({
         parking: z.number().optional(),
         floors: z.number().optional(),
         videoUrl: z.string().optional(),
-        contactName: z.string().optional(),
-        contactPhone: z.string().optional(),
+        contactName: z.string().min(1),
+        contactPhone: z.string().min(1),
         featuredText1: z.string().optional(),
         featuredText2: z.string().optional(),
       })
@@ -276,6 +276,130 @@ const propertyRouter = router({
       if (!valuation) throw new Error("Valoración no encontrada");
       await ctx.db.valuation.delete({ where: { id: valuation.id } });
       return { success: true };
+    }),
+
+  marketZoneValues: protectedProcedure
+    .query(async ({ ctx }) => {
+      const auth = await getAuth(ctx);
+
+      const properties = await ctx.db.property.findMany({
+        where: {
+          companyId: auth.empresaId,
+          district: { not: null },
+          area: { gt: 0 },
+        },
+        select: {
+          city: true,
+          district: true,
+          type: true,
+          price: true,
+          area: true,
+          currency: true,
+        },
+      });
+
+      const zoneMap = new Map<
+        string,
+        {
+          city: string;
+          district: string;
+          land: number[];
+          house: number[];
+          apartment: number[];
+          condo: number[];
+          office: number[];
+          warehouse: number[];
+          currency: string;
+        }
+      >();
+
+      for (const p of properties) {
+        const key = `${p.city}|||${p.district}`;
+        if (!zoneMap.has(key)) {
+          zoneMap.set(key, {
+            city: p.city,
+            district: p.district!,
+            land: [],
+            house: [],
+            apartment: [],
+            condo: [],
+            office: [],
+            warehouse: [],
+            currency: p.currency,
+          });
+        }
+        const zone = zoneMap.get(key)!;
+        const pricePerM2 = Number(p.price) / (p.area as number);
+        switch (p.type) {
+          case "LAND":
+            zone.land.push(pricePerM2);
+            break;
+          case "HOUSE":
+            zone.house.push(pricePerM2);
+            break;
+          case "APARTMENT":
+            zone.apartment.push(pricePerM2);
+            break;
+          case "CONDO":
+            zone.condo.push(pricePerM2);
+            break;
+          case "OFFICE":
+            zone.office.push(pricePerM2);
+            break;
+          case "WAREHOUSE":
+            zone.warehouse.push(pricePerM2);
+            break;
+        }
+      }
+
+      const avg = (arr: number[]) =>
+        arr.length > 0
+          ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)
+          : null;
+
+      const results = Array.from(zoneMap.values()).map((z) => {
+        const landAvg = avg(z.land);
+        const houseAvg = avg(z.house);
+        const apartmentAvg = avg(z.apartment);
+        const condoAvg = avg(z.condo);
+
+        let construccionM2: number | null = null;
+        if (houseAvg !== null && landAvg !== null) {
+          construccionM2 = Math.round(houseAvg - landAvg);
+        } else if (apartmentAvg !== null) {
+          construccionM2 = apartmentAvg;
+        } else if (condoAvg !== null) {
+          construccionM2 = condoAvg;
+        }
+
+        const residencialM2 =
+          avg([...z.house, ...z.apartment, ...z.condo]);
+
+        const comercialM2 = avg([...z.office, ...z.warehouse]);
+
+        const totalProps =
+          z.land.length +
+          z.house.length +
+          z.apartment.length +
+          z.condo.length +
+          z.office.length +
+          z.warehouse.length;
+
+        return {
+          city: z.city,
+          district: z.district,
+          currency: z.currency,
+          terrenoM2: landAvg,
+          construccionM2,
+          residencialM2,
+          comercialM2,
+          totalPropiedades: totalProps,
+        };
+      });
+
+      results.sort((a, b) => b.totalPropiedades - a.totalPropiedades);
+
+      return results;
     }),
 
   marketEstimate: protectedProcedure

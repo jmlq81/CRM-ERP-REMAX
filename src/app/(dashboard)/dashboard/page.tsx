@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
+import { MarketValuesWidget } from "@/components/MarketValuesWidget";
 
 export default function DashboardPage() {
   const { data: properties } = trpc.property.list.useQuery({});
@@ -117,6 +118,8 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <MarketValuesWidget />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
