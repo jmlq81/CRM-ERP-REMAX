@@ -55,7 +55,7 @@ export default function NewPropertyPage() {
     country: form.country,
     bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
     bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
-    area: form.area ? Number(form.area) : undefined,
+    area: Number(form.area),
     type: form.type as
       | "HOUSE"
       | "APARTMENT"
@@ -70,7 +70,8 @@ export default function NewPropertyPage() {
     floors: form.floors ? Number(form.floors) : undefined,
     videoUrl: form.videoUrl || undefined,
     contactName: form.contactName,
-    contactPhone: form.contactPhone,    featuredText1: form.featuredText1 || undefined,
+    contactPhone: form.contactPhone,
+    featuredText1: form.featuredText1 || undefined,
     featuredText2: form.featuredText2 || undefined,
   });
 
@@ -292,13 +293,14 @@ export default function NewPropertyPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Área (m²)
+                Área (m²) *
               </label>
               <input
                 type="number"
                 value={form.area}
                 onChange={(e) => setForm({ ...form, area: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                required
               />
             </div>
             <div>

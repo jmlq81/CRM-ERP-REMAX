@@ -108,7 +108,7 @@ const propertyRouter = router({
         longitude: z.number().optional(),
         bedrooms: z.number().optional(),
         bathrooms: z.number().optional(),
-        area: z.number().optional(),
+        area: z.number().positive(),
         type: z.enum(["HOUSE", "APARTMENT", "CONDO", "LAND", "OFFICE", "WAREHOUSE", "OTHER"]).default("HOUSE"),
         features: z.array(z.string()).default([]),
         yearBuilt: z.number().optional(),
