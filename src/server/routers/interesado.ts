@@ -1,5 +1,18 @@
 import { router, protectedProcedure, getAuth } from "../trpc";
 import { z } from "zod";
+import { computeCold } from "@/lib/leads";
+
+const searchCriteria = {
+  searchType: z
+    .enum(["HOUSE", "APARTMENT", "CONDO", "LAND", "OFFICE", "WAREHOUSE", "OTHER"])
+    .nullable()
+    .optional(),
+  searchDistricts: z.array(z.string().min(1)).optional(),
+  searchMinPrice: z.number().nonnegative().nullable().optional(),
+  searchMaxPrice: z.number().nonnegative().nullable().optional(),
+  searchMinArea: z.number().nonnegative().nullable().optional(),
+  searchMaxArea: z.number().nonnegative().nullable().optional(),
+};
 
 const interesadoRouter = router({
   list: protectedProcedure
@@ -10,6 +23,7 @@ const interesadoRouter = router({
         limit: z.number().default(20),
         offset: z.number().default(0),
         agentId: z.string().optional(),
+        onlyCold: z.boolean().default(false),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -29,6 +43,11 @@ const interesadoRouter = router({
           { phone: { contains: input.search, mode: "insensitive" } },
         ];
       }
+      if (input.onlyCold) {
+        where.AND = [
+          { NOT: { interactions: { some: { createdAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } } } },
+        ];
+      }
 
       const [interesados, total] = await Promise.all([
         ctx.db.interesado.findMany({
@@ -41,7 +60,21 @@ const interesadoRouter = router({
         ctx.db.interesado.count({ where }),
       ]);
 
-      return { interesados, total };
+      return {
+        interesados: interesados.map((i) => {
+          const latest = i.lastActivityAt ?? (i.interactions.length > 0
+            ? i.interactions.reduce((max, x) => (x.createdAt > max ? x.createdAt : max), i.interactions[0].createdAt)
+            : null);
+          const cold = computeCold(latest);
+          return {
+            ...i,
+            lastActivityAt: cold.lastActivityAt,
+            isCold: cold.isCold,
+            daysSinceActivity: cold.daysSinceActivity,
+          };
+        }),
+        total,
+      };
     }),
 
   getById: protectedProcedure
@@ -57,7 +90,16 @@ const interesadoRouter = router({
         include: { property: true, interactions: true, tasks: true },
       });
       if (!interesado) throw new Error("Interesado no encontrado");
-      return interesado;
+      const latest = interesado.lastActivityAt ?? (interesado.interactions.length > 0
+        ? interesado.interactions.reduce((max, x) => (x.createdAt > max ? x.createdAt : max), interesado.interactions[0].createdAt)
+        : null);
+      const cold = computeCold(latest);
+      return {
+        ...interesado,
+        lastActivityAt: cold.lastActivityAt,
+        isCold: cold.isCold,
+        daysSinceActivity: cold.daysSinceActivity,
+      };
     }),
 
   create: protectedProcedure
@@ -72,6 +114,7 @@ const interesadoRouter = router({
         propertyId: z.string().optional(),
         interestLevel: z.number().min(1).max(5).optional(),
         nextFollowUpAt: z.string().datetime().nullable().optional(),
+        ...searchCriteria,
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -81,6 +124,7 @@ const interesadoRouter = router({
         data: {
           ...data,
           nextFollowUpAt: nextFollowUpAt ? new Date(nextFollowUpAt) : undefined,
+          lastActivityAt: new Date(),
           userId: ctx.session.user.id,
           companyId: auth.empresaId,
         },
@@ -100,6 +144,7 @@ const interesadoRouter = router({
         status: z.enum(["NEW", "CONTACTED", "QUALIFIED", "NEGOTIATION", "CLOSED_WON", "CLOSED_LOST"]).optional(),
         interestLevel: z.number().min(1).max(5).optional().nullable(),
         nextFollowUpAt: z.string().datetime().optional().nullable(),
+        ...searchCriteria,
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -139,13 +184,18 @@ const interesadoRouter = router({
       });
       if (!interesado) throw new Error("Interesado no encontrado");
       const { interesadoId, ...rest } = input;
-      return ctx.db.interaction.create({
+      const interaction = await ctx.db.interaction.create({
         data: {
           ...rest,
           interesadoId,
           userId: ctx.session.user.id,
         },
       });
+      await ctx.db.interesado.update({
+        where: { id: interesadoId },
+        data: { lastActivityAt: new Date(), coldMarkedAt: null },
+      });
+      return interaction;
     }),
 
   scheduleFollowUp: protectedProcedure
@@ -183,6 +233,30 @@ const interesadoRouter = router({
         },
         data: { nextFollowUpAt: null },
       });
+    }),
+
+  markColdLeads: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const auth = await getAuth(ctx);
+      const cutoff = new Date(Date.now() - 30 * 86_400_000);
+      const stale = await ctx.db.interesado.findMany({
+        where: {
+          companyId: auth.empresaId,
+          status: { notIn: ["CLOSED_WON", "CLOSED_LOST"] },
+          OR: [{ coldMarkedAt: null }, { coldMarkedAt: { lt: cutoff } }],
+          NOT: {
+            interactions: { some: { createdAt: { gte: cutoff } } },
+          },
+        },
+        select: { id: true },
+      });
+      if (stale.length === 0) return { marked: 0 };
+      const ids = stale.map((s) => s.id);
+      const res = await ctx.db.interesado.updateMany({
+        where: { id: { in: ids } },
+        data: { coldMarkedAt: new Date() },
+      });
+      return { marked: res.count };
     }),
 
   delete: protectedProcedure

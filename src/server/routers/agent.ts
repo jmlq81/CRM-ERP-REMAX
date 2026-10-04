@@ -88,7 +88,7 @@ const agentRouter = router({
         name: z.string().min(1, "Nombre requerido"),
         email: z.string().email("Email inválido"),
         password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-        role: z.enum(["OWNER", "AGENT"]).default("AGENT"),
+        role: z.enum(["OWNER", "AGENT", "TASADOR"]).default("AGENT"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -122,7 +122,7 @@ const agentRouter = router({
     }),
 
   updateRole: managerProcedure
-    .input(z.object({ userId: z.string(), role: z.enum(["OWNER", "AGENT"]) }))
+    .input(z.object({ userId: z.string(), role: z.enum(["OWNER", "AGENT", "TASADOR"]) }))
     .mutation(async ({ ctx, input }) => {
       const auth = await getAuth(ctx);
       const target = await ctx.db.user.findUnique({ where: { id: input.userId } });

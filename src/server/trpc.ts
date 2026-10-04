@@ -7,11 +7,20 @@ interface SessionUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
-  role?: "ADMIN" | "OWNER" | "AGENT";
+  role?: Role;
   activeCompanyId?: string | null;
 }
 
-export type Role = "ADMIN" | "OWNER" | "AGENT";
+export const ROLES = ["ADMIN", "OWNER", "AGENT", "TASADOR"] as const;
+
+export type Role = (typeof ROLES)[number];
+
+export const ROLE_LABELS: Record<Role, string> = {
+  ADMIN: "Administrador",
+  OWNER: "Dueño",
+  AGENT: "Agente",
+  TASADOR: "Tasador",
+};
 
 export type Context = {
   db: typeof db;
@@ -79,6 +88,7 @@ export type AuthInfo = {
   activeCompanyId: string | null;
   empresaId: string;
   canSeeAll: boolean;
+  canValue: boolean;
 };
 
 export async function getAuth(ctx: {
@@ -101,6 +111,7 @@ export async function getAuth(ctx: {
     activeCompanyId: u.activeCompanyId,
     empresaId,
     canSeeAll: role === "ADMIN" || role === "OWNER",
+    canValue: role === "TASADOR" || role === "ADMIN",
   };
 }
 

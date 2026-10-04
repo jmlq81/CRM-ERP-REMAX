@@ -1,6 +1,118 @@
 import { router, protectedProcedure, getAuth } from "../trpc";
+import type { AuthInfo } from "../trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { trafficLightFor } from "@/lib/leads";
 import { supabase } from "@/lib/supabase";
+
+type EstimateCtx = {
+  db: typeof import("@/lib/prisma").db;
+  session: { user: { id: string } };
+};
+
+async function estimateForProperty(ctx: EstimateCtx, propertyId: string, auth?: AuthInfo) {
+  const resolved = auth ?? (await getAuth(ctx));
+  const property = await ctx.db.property.findFirst({
+    where: {
+      id: propertyId,
+      companyId: resolved.empresaId,
+      ...(resolved.canSeeAll ? {} : { userId: ctx.session.user.id }),
+    },
+  });
+  if (!property) throw new Error("Propiedad no encontrada");
+  if (!property.area) {
+    return {
+      estimatedValue: null,
+      avgPricePerM2: null,
+      comparablesCount: 0,
+      comparables: [] as Array<{ pricePerM2: number; area: number }>,
+      level: null,
+      askedPrice: null,
+      deviationPct: null,
+      trafficLight: null,
+      range: null,
+    };
+  }
+
+  const area = property.area;
+  const baseWhere: Record<string, unknown> = {
+    id: { not: property.id },
+    companyId: resolved.empresaId,
+    status: "ACTIVE" as const,
+    price: { not: null },
+    area: { gte: area * 0.7, lte: area * 1.3 },
+  };
+
+  const levels = [
+    { name: "distrito", where: { type: property.type, district: property.district ?? undefined } },
+    { name: "ciudad-sin-area", where: { type: property.type, city: property.city } },
+    { name: "ciudad", where: { city: property.city } },
+    { name: "empresa", where: {} },
+  ];
+
+  let matches: Array<{ price: number; area: number }> = [];
+  let level: string | null = null;
+
+  for (const l of levels) {
+    const where = { ...baseWhere, ...l.where };
+    const rows = await ctx.db.property.findMany({
+      where,
+      select: { price: true, area: true },
+      take: 60,
+    });
+    const withArea = rows
+      .filter((r) => r.area && r.area > 0)
+      .map((r) => ({ price: Number(r.price), area: r.area as number }));
+    if (withArea.length >= 3) {
+      matches = withArea.slice(0, 40);
+      level = l.name;
+      break;
+    }
+    if (withArea.length > 0 && level === null) {
+      matches = withArea.slice(0, 40);
+      level = l.name + "-parcial";
+    }
+  }
+
+  if (matches.length === 0) {
+    return {
+      estimatedValue: null,
+      avgPricePerM2: null,
+      comparablesCount: 0,
+      comparables: [] as Array<{ pricePerM2: number; area: number }>,
+      level: null,
+      askedPrice: property.price !== null ? Number(property.price) : null,
+      deviationPct: null,
+      trafficLight: null,
+      range: null,
+    };
+  }
+
+  const pricesPerM2 = matches.map((m) => m.price / m.area);
+  const avg = pricesPerM2.reduce((a, b) => a + b, 0) / pricesPerM2.length;
+  const estimated = avg * area;
+  const askedPrice = property.price !== null ? Number(property.price) : null;
+  const deviationPct =
+    askedPrice !== null ? ((askedPrice - estimated) / estimated) * 100 : null;
+
+  return {
+    estimatedValue: Math.round(estimated),
+    avgPricePerM2: Math.round(avg),
+    comparablesCount: matches.length,
+    comparables: matches.slice(0, 8).map((m) => ({
+      pricePerM2: Math.round(m.price / m.area),
+      area: m.area,
+    })),
+    level,
+    askedPrice,
+    deviationPct: deviationPct !== null ? Math.round(deviationPct * 10) / 10 : null,
+    trafficLight: trafficLightFor(deviationPct),
+    range: {
+      min: Math.round(estimated * 0.9),
+      max: Math.round(estimated * 1.1),
+    },
+  };
+}
 
 function storagePathFromUrl(url: string): string {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -406,87 +518,51 @@ const propertyRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const auth = await getAuth(ctx);
+      return estimateForProperty(ctx, input.id, auth);
+    }),
+
+  _unusedEstimateGuard: protectedProcedure.query(() => ({ ok: true })),
+
+      generateValuation: protectedProcedure
+    .input(
+      z.object({
+        propertyId: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const auth = await getAuth(ctx);
+      if (!auth.canValue) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Solo un tasador puede generar tasaciones",
+        });
+      }
+
       const property = await ctx.db.property.findFirst({
         where: {
-          id: input.id,
+          id: input.propertyId,
           companyId: auth.empresaId,
           ...(auth.canSeeAll ? {} : { userId: ctx.session.user.id }),
         },
       });
       if (!property) throw new Error("Propiedad no encontrada");
-      if (!property.area) {
-        return {
-          estimatedValue: null,
-          avgPricePerM2: null,
-          comparablesCount: 0,
-          level: null,
-          range: null,
-        };
+
+      const estimate = await estimateForProperty(ctx, input.propertyId, auth);
+      if (estimate.estimatedValue === null) {
+        throw new Error("No hay comparables suficientes para tasar esta propiedad");
       }
 
-      const area = property.area;
-      const baseWhere: Record<string, unknown> = {
-        id: { not: property.id },
-        companyId: auth.empresaId,
-        status: "ACTIVE" as const,
-        price: { not: null },
-        area: { gte: area * 0.7, lte: area * 1.3 },
-      };
-
-      const levels = [
-        { name: "distrito", where: { type: property.type, district: property.district ?? undefined } },
-        { name: "ciudad-sin-area", where: { type: property.type, city: property.city } },
-        { name: "ciudad", where: { city: property.city } },
-        { name: "empresa", where: {} },
-      ];
-
-      let matches: Array<{ price: number; area: number }> = [];
-      let level: string | null = null;
-
-      for (const l of levels) {
-        const where = { ...baseWhere, ...l.where };
-        const rows = await ctx.db.property.findMany({
-          where,
-          select: { price: true, area: true },
-          take: 60,
-        });
-        const withArea = rows
-          .filter((r) => r.area && r.area > 0)
-          .map((r) => ({ price: Number(r.price), area: r.area as number }));
-        if (withArea.length >= 3) {
-          matches = withArea.slice(0, 40);
-          level = l.name;
-          break;
-        }
-        if (withArea.length > 0 && level === null) {
-          matches = withArea.slice(0, 40);
-          level = l.name + "-parcial";
-        }
-      }
-
-      if (matches.length === 0) {
-        return {
-          estimatedValue: null,
-          avgPricePerM2: null,
-          comparablesCount: 0,
-          level: null,
-          range: null,
-        };
-      }
-
-      const pricesPerM2 = matches.map((m) => m.price / m.area);
-      const avg = pricesPerM2.reduce((a, b) => a + b, 0) / pricesPerM2.length;
-      const estimated = avg * area;
-      return {
-        estimatedValue: Math.round(estimated),
-        avgPricePerM2: Math.round(avg),
-        comparablesCount: matches.length,
-        level,
-        range: {
-          min: Math.round(estimated * 0.9),
-          max: Math.round(estimated * 1.1),
+      return ctx.db.valuation.create({
+        data: {
+          propertyId: property.id,
+          userId: ctx.session.user.id,
+          companyId: auth.empresaId,
+          marketValue: estimate.estimatedValue,
+          notes: input.notes,
+          source: "MARKET" as const,
         },
-      };
+      });
     }),
 });
 

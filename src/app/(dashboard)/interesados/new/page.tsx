@@ -16,6 +16,25 @@ type InteresadoSource =
   | "WHATSAPP"
   | "OTHER";
 
+type PropertyType =
+  | "HOUSE"
+  | "APARTMENT"
+  | "CONDO"
+  | "LAND"
+  | "OFFICE"
+  | "WAREHOUSE"
+  | "OTHER";
+
+const PROPERTY_TYPES: Array<{ value: PropertyType; label: string }> = [
+  { value: "HOUSE", label: "Casa" },
+  { value: "APARTMENT", label: "Apartamento" },
+  { value: "CONDO", label: "Condominio" },
+  { value: "LAND", label: "Terreno" },
+  { value: "OFFICE", label: "Oficina" },
+  { value: "WAREHOUSE", label: "Almacén" },
+  { value: "OTHER", label: "Otro" },
+];
+
 export default function NewInteresadoPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -30,6 +49,12 @@ export default function NewInteresadoPage() {
     budget: string;
     propertyId: string;
     interestLevel: string;
+    searchType: string;
+    searchDistricts: string;
+    searchMinPrice: string;
+    searchMaxPrice: string;
+    searchMinArea: string;
+    searchMaxArea: string;
   }>({
     name: "",
     email: "",
@@ -39,6 +64,12 @@ export default function NewInteresadoPage() {
     budget: "",
     propertyId: "",
     interestLevel: "",
+    searchType: "",
+    searchDistricts: "",
+    searchMinPrice: "",
+    searchMaxPrice: "",
+    searchMinArea: "",
+    searchMaxArea: "",
   });
 
   const createInteresado = trpc.interesado.create.useMutation({
@@ -61,6 +92,21 @@ export default function NewInteresadoPage() {
       interestLevel: form.interestLevel
         ? Number(form.interestLevel)
         : undefined,
+      searchType: form.searchType
+        ? (form.searchType as PropertyType)
+        : null,
+      searchDistricts: form.searchDistricts
+        .split(",")
+        .map((d) => d.trim())
+        .filter(Boolean),
+      searchMinPrice: form.searchMinPrice
+        ? Number(form.searchMinPrice)
+        : null,
+      searchMaxPrice: form.searchMaxPrice
+        ? Number(form.searchMaxPrice)
+        : null,
+      searchMinArea: form.searchMinArea ? Number(form.searchMinArea) : null,
+      searchMaxArea: form.searchMaxArea ? Number(form.searchMaxArea) : null,
     });
   };
 
@@ -162,6 +208,100 @@ export default function NewInteresadoPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="sm:col-span-2 mt-6 border-t border-gray-100 pt-4">
+              <h3 className="text-sm font-semibold text-gray-900">
+                Criterios de búsqueda
+              </h3>
+              <p className="mb-4 text-xs text-gray-500">
+                Con estos datos el sistema cruza automáticamente las
+                propiedades disponibles y genera matches.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Tipo de inmueble buscado
+              </label>
+              <select
+                value={form.searchType}
+                onChange={(e) =>
+                  setForm({ ...form, searchType: e.target.value })
+                }
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none"
+              >
+                <option value="">Cualquiera</option>
+                {PROPERTY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Distritos (separados por coma)
+              </label>
+              <input
+                type="text"
+                value={form.searchDistricts}
+                onChange={(e) =>
+                  setForm({ ...form, searchDistricts: e.target.value })
+                }
+                placeholder="Miraflores, San Isidro"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Precio mínimo (S/)
+              </label>
+              <input
+                type="number"
+                value={form.searchMinPrice}
+                onChange={(e) =>
+                  setForm({ ...form, searchMinPrice: e.target.value })
+                }
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Precio máximo (S/)
+              </label>
+              <input
+                type="number"
+                value={form.searchMaxPrice}
+                onChange={(e) =>
+                  setForm({ ...form, searchMaxPrice: e.target.value })
+                }
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Área mínima (m²)
+              </label>
+              <input
+                type="number"
+                value={form.searchMinArea}
+                onChange={(e) =>
+                  setForm({ ...form, searchMinArea: e.target.value })
+                }
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Área máxima (m²)
+              </label>
+              <input
+                type="number"
+                value={form.searchMaxArea}
+                onChange={(e) =>
+                  setForm({ ...form, searchMaxArea: e.target.value })
+                }
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">

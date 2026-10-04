@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
-import { Plus, Search, Phone, Mail, MessageSquare } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Phone,
+  Mail,
+  MessageSquare,
+  Snowflake,
+} from "lucide-react";
+import { COLD_LABEL } from "@/lib/leads";
 
 const statusColors: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-700",
@@ -58,10 +66,12 @@ function InterestLevel({ level }: { level: number | null }) {
 export default function InteresadosPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [onlyCold, setOnlyCold] = useState(false);
 
   const { data, isLoading } = trpc.interesado.list.useQuery({
     search: search || undefined,
     status: status || undefined,
+    onlyCold,
   });
 
   return (
@@ -104,6 +114,15 @@ export default function InteresadosPage() {
           <option value="CLOSED_WON">Cerrado ganado</option>
           <option value="CLOSED_LOST">Cerrado perdido</option>
         </select>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={onlyCold}
+            onChange={(e) => setOnlyCold(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+          />
+          Solo fríos
+        </label>
       </div>
 
       {isLoading ? (
@@ -130,7 +149,20 @@ export default function InteresadosPage() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{interesado.name}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-gray-900">
+                      {interesado.name}
+                    </h3>
+                    {interesado.isCold && (
+                      <span
+                        title={COLD_LABEL}
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                      >
+                        <Snowflake className="h-3 w-3" />
+                        Frío · {interesado.daysSinceActivity}d
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     {interesado.email && (
                       <span className="flex items-center gap-1">

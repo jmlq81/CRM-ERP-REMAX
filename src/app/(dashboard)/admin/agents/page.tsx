@@ -14,13 +14,17 @@ import {
   Coins,
   AlarmClock,
   Crown,
+  Scale,
 } from "lucide-react";
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Admin plataforma",
   OWNER: "Dueño",
   AGENT: "Agente",
+  TASADOR: "Tasador",
 };
+
+type AssignableRole = "OWNER" | "AGENT" | "TASADOR";
 
 export default function AdminAgentsPage() {
   const { data: agents, isLoading, isError, error } = trpc.agent.list.useQuery();
@@ -35,7 +39,7 @@ export default function AdminAgentsPage() {
     name: "",
     email: "",
     password: "",
-    role: "AGENT" as "OWNER" | "AGENT",
+    role: "AGENT" as AssignableRole,
   });
 
   if (isLoading) {
@@ -62,15 +66,16 @@ export default function AdminAgentsPage() {
       a.email?.toLowerCase().includes(filter.toLowerCase())
   );
 
-  const handleRoleChange = (id: string, role: string) => {
-    const next = role === "AGENT" ? "OWNER" : "AGENT";
+  const handleRoleChange = (id: string, role: AssignableRole) => {
     const msg =
-      next === "OWNER"
+      role === "OWNER"
         ? "¿Convertir a este usuario en Dueño de la empresa?"
-        : "¿Quitar el rol de Dueño y dejarlo como Agente?";
+        : role === "TASADOR"
+        ? "¿Asignar a este usuario el rol de Tasador? Podrá generar tasaciones por comparables."
+        : "¿Quitar el rol actual y dejarlo como Agente?";
     if (!confirm(msg)) return;
     updateRole.mutate(
-      { userId: id, role: next },
+      { userId: id, role },
       { onSuccess: () => utils.agent.list.invalidate(), onError: (e) => alert(e.message) }
     );
   };
@@ -179,11 +184,12 @@ export default function AdminAgentsPage() {
             </label>
             <select
               value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value as "OWNER" | "AGENT" })}
+              onChange={(e) => setForm({ ...form, role: e.target.value as AssignableRole })}
               className="w-full rounded-lg border px-3 py-2 text-sm"
             >
               <option value="AGENT">Agente</option>
               <option value="OWNER">Dueño</option>
+              <option value="TASADOR">Tasador</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -251,6 +257,8 @@ export default function AdminAgentsPage() {
                         ? "bg-amber-100 text-amber-700"
                         : agent.role === "ADMIN"
                         ? "bg-purple-100 text-purple-700"
+                        : agent.role === "TASADOR"
+                        ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >
@@ -303,12 +311,28 @@ export default function AdminAgentsPage() {
                 {agent.role !== "ADMIN" && (
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleRoleChange(agent.id, agent.role)}
+                      onClick={() =>
+                        handleRoleChange(agent.id, agent.role === "OWNER" ? "AGENT" : "OWNER")
+                      }
                       className="flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50"
                       title={agent.role === "OWNER" ? "Quitar rol de dueño" : "Hacer dueño"}
                     >
                       <Crown className="h-3 w-3" />
                       {agent.role === "OWNER" ? "Quitar dueño" : "Hacer dueño"}
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleRoleChange(agent.id, agent.role === "TASADOR" ? "AGENT" : "TASADOR")
+                      }
+                      className="flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                      title={
+                        agent.role === "TASADOR"
+                          ? "Quitar rol de tasador"
+                          : "Asignar rol de tasador"
+                      }
+                    >
+                      <Scale className="h-3 w-3" />
+                      {agent.role === "TASADOR" ? "Quitar tasador" : "Hacer tasador"}
                     </button>
                     <button
                       onClick={() => handleDeactivate(agent.id, agent.name ?? undefined)}

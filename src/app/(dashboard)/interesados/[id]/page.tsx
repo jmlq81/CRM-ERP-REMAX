@@ -3,8 +3,17 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Phone, Mail, Plus, CalendarClock } from "lucide-react";
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  Plus,
+  CalendarClock,
+  AlertCircle,
+  Target,
+} from "lucide-react";
 import { useState } from "react";
+import { COLD_LABEL } from "@/lib/leads";
 
 const statusColors: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-700",
@@ -55,6 +64,7 @@ export default function InteresadoDetailPage() {
   const addInteraction = trpc.interesado.addInteraction.useMutation({
     onSuccess: () => {
       utils.interesado.list.invalidate();
+      utils.interesado.getById.invalidate({ id: params.id as string });
       setNewNote("");
     },
   });
@@ -92,6 +102,19 @@ export default function InteresadoDetailPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{interesado.name}</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[interesado.status]}`}
+                >
+                  {statusLabels[interesado.status]}
+                </span>
+                {interesado.isCold && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    <AlertCircle className="h-3 w-3" />
+                    Frío
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 {interesado.email && (
                   <span className="flex items-center gap-1">
@@ -282,8 +305,97 @@ export default function InteresadoDetailPage() {
                   {new Date(interesado.createdAt).toLocaleDateString("es-PE")}
                 </dd>
               </div>
+              <div>
+                <dt className="text-sm text-gray-500">Última actividad</dt>
+                <dd className="font-medium text-gray-900">
+                  {interesado.lastActivityAt
+                    ? new Date(interesado.lastActivityAt).toLocaleDateString(
+                        "es-PE"
+                      )
+                    : "Sin registro"}
+                  {interesado.daysSinceActivity !== null && (
+                    <span className="ml-1 text-sm font-normal text-gray-500">
+                      (hace {interesado.daysSinceActivity} días)
+                    </span>
+                  )}
+                </dd>
+              </div>
+              {interesado.isCold && (
+                <div>
+                  <dt className="text-sm text-gray-500">Estado</dt>
+                  <dd>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {COLD_LABEL}
+                    </span>
+                  </dd>
+                </div>
+              )}
             </dl>
           </div>
+
+          {(interesado.searchType ||
+            interesado.searchDistricts.length > 0 ||
+            interesado.searchMinPrice !== null ||
+            interesado.searchMaxPrice !== null ||
+            interesado.searchMinArea !== null ||
+            interesado.searchMaxArea !== null) && (
+            <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                Criterios de búsqueda
+              </h3>
+              <dl className="space-y-3">
+                {interesado.searchType && (
+                  <div>
+                    <dt className="text-sm text-gray-500">Tipo buscado</dt>
+                    <dd className="font-medium text-gray-900">
+                      {interesado.searchType}
+                    </dd>
+                  </div>
+                )}
+                {interesado.searchDistricts.length > 0 && (
+                  <div>
+                    <dt className="text-sm text-gray-500">Distritos</dt>
+                    <dd className="font-medium text-gray-900">
+                      {interesado.searchDistricts.join(", ")}
+                    </dd>
+                  </div>
+                )}
+                {(interesado.searchMinPrice !== null ||
+                  interesado.searchMaxPrice !== null) && (
+                  <div>
+                    <dt className="text-sm text-gray-500">Rango de precio</dt>
+                    <dd className="font-medium text-gray-900">
+                      {interesado.searchMinPrice !== null
+                        ? `S/ ${interesado.searchMinPrice.toLocaleString()}`
+                        : "Sin mín."}{" "}
+                      —{" "}
+                      {interesado.searchMaxPrice !== null
+                        ? `S/ ${interesado.searchMaxPrice.toLocaleString()}`
+                        : "Sin máx."}
+                    </dd>
+                  </div>
+                )}
+                {(interesado.searchMinArea !== null ||
+                  interesado.searchMaxArea !== null) && (
+                  <div>
+                    <dt className="text-sm text-gray-500">Rango de área</dt>
+                    <dd className="font-medium text-gray-900">
+                      {interesado.searchMinArea ?? 0} m² —{" "}
+                      {interesado.searchMaxArea ?? "sin límite"} m²
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              <Link
+                href="/matches"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-700"
+              >
+                <Target className="h-4 w-4" />
+                Ver matches de este interesado
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

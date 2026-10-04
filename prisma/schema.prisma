@@ -219,6 +219,14 @@ model Interesado {
   currency   Currency   @default(PEN)
   interestLevel Int?
   nextFollowUpAt DateTime?
+  searchType     PropertyType?
+  searchDistricts String[]     @default([])
+  searchMinPrice Decimal?      @db.Decimal(12, 2)
+  searchMaxPrice Decimal?      @db.Decimal(12, 2)
+  searchMinArea  Float?
+  searchMaxArea  Float?
+  lastActivityAt DateTime?
+  coldMarkedAt   DateTime?
 userId     String
   propertyId String?
 companyId  String
@@ -236,6 +244,7 @@ companyId  String
   @@index([companyId])
   @@index([status])
   @@index([propertyId])
+  @@index([lastActivityAt])
   @@map("interesados")
 }
 
@@ -373,6 +382,7 @@ enum Role {
   ADMIN
   OWNER
   AGENT
+  TASADOR
 }
 
 enum Currency {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { BadgeCheck, Trash2, TrendingDown, Scale } from "lucide-react";
+import { trafficLightFor, VALUATION_BANDS } from "@/lib/leads";
 
 const SOURCE_LABELS: Record<string, string> = {
   INSPECTION: "Inspección",
@@ -12,24 +13,41 @@ const SOURCE_LABELS: Record<string, string> = {
   OTHER: "Otro",
 };
 
-function comparisonBadge(diff: number | null) {
-  if (diff === null) return null;
-  const abs = Math.abs(diff);
-  if (abs <= 5) {
-    return {
-      label: "En rango",
-      className: "bg-gray-100 text-gray-700",
-    };
-  }
-  if (diff > 0) {
-    return {
-      label: `Por encima del mercado (${diff.toFixed(0)}%)`,
-      className: "bg-red-100 text-red-700",
-    };
-  }
-  return {
-    label: `Por debajo del mercado (${Math.abs(diff).toFixed(0)}%)`,
+const TRAFFIC_LIGHTS = {
+  GREEN: {
+    label: "Dentro del rango",
     className: "bg-green-100 text-green-700",
+    dot: "bg-green-500",
+  },
+  YELLOW: {
+    label: "Revisar precio",
+    className: "bg-yellow-100 text-yellow-800",
+    dot: "bg-yellow-500",
+  },
+  RED: {
+    label: "Fuera del mercado",
+    className: "bg-red-100 text-red-700",
+    dot: "bg-red-500",
+  },
+} as const;
+
+type TrafficLightKey = keyof typeof TRAFFIC_LIGHTS;
+
+function comparisonBadge(diff: number | null): {
+  label: string;
+  className: string;
+  key: TrafficLightKey;
+} | null {
+  if (diff === null) return null;
+  const light = TRAFFIC_LIGHTS[trafficLightFor(diff) ?? "GREEN"];
+  const direction = diff > 0 ? "por encima" : "por debajo";
+  return {
+    key: trafficLightFor(diff) ?? "GREEN",
+    label:
+      Math.abs(diff) <= 0.05
+        ? light.label
+        : `${light.label} · ${Math.abs(diff).toFixed(0)}% ${direction}`,
+    className: light.className,
   };
 }
 
@@ -70,6 +88,11 @@ export function ValuationCard({
       utils.property.valuationsByProperty.invalidate({ id: propertyId });
     },
   });
+  const generateValuation = trpc.property.generateValuation.useMutation({
+    onSuccess: () => {
+      utils.property.valuationsByProperty.invalidate({ id: propertyId });
+    },
+  });
 
   const [marketValue, setMarketValue] = useState("");
   const [source, setSource] = useState("INSPECTION");
@@ -78,6 +101,7 @@ export function ValuationCard({
 
   const canEdit =
     user?.role === "ADMIN" || user?.role === "OWNER" || user?.id === propertyUserId;
+  const canGenerate = user?.role === "TASADOR" || user?.role === "ADMIN";
 
   const pricePerM2 = area && area > 0 ? price / area : null;
   const latest = valuations && valuations.length > 0 ? valuations[0] : null;
@@ -142,6 +166,58 @@ export function ValuationCard({
           )}
         </div>
       </div>
+
+      {badge && (
+        <div className="mt-4 rounded-lg border border-gray-200 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-900">
+              Semáforo de precio
+            </p>
+            <span className="text-xs text-gray-500">
+              Verde ±{VALUATION_BANDS.greenMax}% · Amarillo ±
+              {VALUATION_BANDS.yellowMax}%
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {(["GREEN", "YELLOW", "RED"] as const).map((k) => {
+              const l = TRAFFIC_LIGHTS[k];
+              const active = badge.key === k;
+              return (
+                <div key={k} className="flex flex-1 flex-col gap-1">
+                  <div
+                    className={`h-2.5 rounded-full ${l.dot} ${active ? "" : "opacity-25"}`}
+                  />
+                  <span
+                    className={`text-center text-xs ${active ? "font-semibold text-gray-900" : "text-gray-400"}`}
+                  >
+                    {l.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {canGenerate && estimate?.estimatedValue != null && area != null && (
+        <button
+          type="button"
+          onClick={() => generateValuation.mutate({ propertyId })}
+          disabled={generateValuation.isPending}
+          className="mt-4 w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {generateValuation.isPending
+            ? "Generando tasación..."
+            : "Generar tasación por comparables (máx. 8)"}
+        </button>
+      )}
+
+      {!canGenerate && (
+        <p className="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
+          La generación de tasaciones por comparables está reservada al rol
+          Tasador.
+        </p>
+      )}
 
       {estimate?.estimatedValue != null && area != null && (
         <div className="mt-4 flex items-start gap-3 rounded-lg border border-gray-200 p-4">
