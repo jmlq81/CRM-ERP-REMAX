@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function HomePage() {
+export default function InicioPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-remax-navy">
       <div className="flex flex-col items-center px-6 text-center">
@@ -13,7 +13,7 @@ export default function HomePage() {
         <p className="mb-8 max-w-xl text-xl text-remax-cream/80">
           Gestión inmobiliaria inteligente para agentes profesionales
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           <Link
             href="/login"
             className="rounded-lg bg-remax px-8 py-3 font-semibold text-white shadow-lg hover:bg-remax-dark-red"
@@ -25,6 +25,12 @@ export default function HomePage() {
             className="rounded-lg border-2 border-white px-8 py-3 font-semibold text-white hover:bg-white hover:text-remax-navy"
           >
             Crear Cuenta
+          </Link>
+          <Link
+            href="/"
+            className="rounded-lg px-8 py-3 font-semibold text-remax-cream/80 hover:text-white"
+          >
+            Ver propiedades
           </Link>
         </div>
       </div>
