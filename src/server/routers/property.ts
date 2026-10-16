@@ -1,4 +1,4 @@
-import { router, protectedProcedure, getAuth } from "../trpc";
+import { router, protectedProcedure, publicProcedure, getAuth } from "../trpc";
 import type { AuthInfo } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -164,6 +164,65 @@ const propertyRouter = router({
         ctx.db.property.findMany({
           where,
           include: { photos: true },
+          orderBy: { createdAt: "desc" },
+          take: input.limit,
+          skip: input.offset,
+        }),
+        ctx.db.property.count({ where }),
+      ]);
+
+      return { properties, total };
+    }),
+
+  publicList: publicProcedure
+    .input(
+      z.object({
+        city: z.string().optional(),
+        type: z.string().optional(),
+        search: z.string().optional(),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        limit: z.number().max(60).default(24),
+        offset: z.number().default(0),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const where: Record<string, unknown> = { status: "ACTIVE" };
+
+      if (input.city) where.city = input.city;
+      if (input.type) where.type = input.type;
+      if (input.search) {
+        where.OR = [
+          { title: { contains: input.search, mode: "insensitive" } },
+          { address: { contains: input.search, mode: "insensitive" } },
+          { district: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
+      if (input.minPrice || input.maxPrice) {
+        where.price = {};
+        if (input.minPrice) (where.price as Record<string, unknown>).gte = input.minPrice;
+        if (input.maxPrice) (where.price as Record<string, unknown>).lte = input.maxPrice;
+      }
+
+      const [properties, total] = await Promise.all([
+        ctx.db.property.findMany({
+          where,
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            currency: true,
+            address: true,
+            city: true,
+            district: true,
+            bedrooms: true,
+            bathrooms: true,
+            area: true,
+            type: true,
+            featuredText1: true,
+            featuredText2: true,
+            photos: { select: { url: true, alt: true }, orderBy: { sortOrder: "asc" } },
+          },
           orderBy: { createdAt: "desc" },
           take: input.limit,
           skip: input.offset,

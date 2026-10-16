@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  --remax-red: #ff1200;
+  --remax-blue: #0043ff;
+  --remax-dark-red: #aa1120;
+  --remax-dark-blue: #0c2749;
+  --remax-cream: #f7f5ee;
+
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,13 +16,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-remax: var(--remax-red);
+  --color-remax-blue: var(--remax-blue);
+  --color-remax-dark-red: var(--remax-dark-red);
+  --color-remax-navy: var(--remax-dark-blue);
+  --color-remax-cream: var(--remax-cream);
 }
 
 body {

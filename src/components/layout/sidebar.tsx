@@ -66,18 +66,22 @@ export function Sidebar({
       )}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-gray-900 text-white transition-transform lg:static lg:z-auto lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-remax-navy text-white transition-transform lg:static lg:z-auto lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between px-6">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2"
+            className="flex items-center"
             onClick={onClose}
           >
-            <Home className="h-8 w-8 text-red-500" />
-            <span className="text-xl font-bold">RE/MAX CRM</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/remax-family-blanco.png"
+              alt="RE/MAX Family"
+              className="h-9 w-auto"
+            />
           </Link>
           <button
             onClick={onClose}
@@ -99,7 +103,7 @@ export function Sidebar({
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-red-600 text-white"
+                    ? "bg-remax text-white"
                     : "text-gray-300 hover:bg-gray-800 hover:text-white"
                 )}
               >
@@ -119,7 +123,7 @@ export function Sidebar({
                   {empresa.nombre}
                 </p>
 <p className="text-[10px] text-gray-400">
-                {empresa.rol === "ADMIN" ? "Administrador de plataforma" : empresa.rol === "OWNER" ? "Dueño" : "Agente"}
+                {empresa.rol === "ADMIN" ? "Administrador de plataforma" : empresa.rol === "OWNER" ? "Dueño" : empresa.rol === "TASADOR" ? "Tasador" : "Agente"}
               </p>
               {empresa.ruc && (
                 <p className="truncate text-[10px] text-gray-500">RUC {empresa.ruc}</p>

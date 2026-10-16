@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TRPCProvider } from "@/lib/trpc-provider";
 import { trpc } from "@/lib/trpc";
-import { Home, Loader2, Building2, AlertCircle } from "lucide-react";
+import {  Loader2, Building2, AlertCircle } from "lucide-react";
 
 function BienvenidoContent() {
   const router = useRouter();
@@ -45,11 +45,17 @@ function BienvenidoContent() {
 
   return (
     <div className="flex min-h-screen">
-      <div className="hidden w-1/2 items-center justify-center bg-gradient-to-br from-red-600 to-red-800 lg:flex">
-        <div className="text-center text-white">
-          <Home className="mx-auto mb-4 h-16 w-16" />
-          <h1 className="text-4xl font-bold">RE/MAX CRM</h1>
-          <p className="mt-2 text-red-100">Crea tu empresa y empieza a operar</p>
+      <div className="hidden w-1/2 items-center justify-center bg-remax-navy lg:flex">
+        <div className="flex flex-col items-center px-6 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/remax-family-blanco.png"
+            alt="RE/MAX Family"
+            className="mb-4 h-16 w-auto"
+          />
+          <p className="mt-2 text-remax-cream/80">
+            Crea tu empresa y empieza a operar
+          </p>
         </div>
       </div>
       <div className="flex w-full items-center justify-center bg-white lg:w-1/2">

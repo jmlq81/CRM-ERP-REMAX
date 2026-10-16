@@ -11,7 +11,7 @@ export default function PublicPage() {
   const [city, setCity] = useState("");
   const [type, setType] = useState("");
 
-  const { data } = trpc.property.list.useQuery({
+  const { data, isLoading } = trpc.property.publicList.useQuery({
     search: search || undefined,
     city: city || undefined,
     type: type || undefined,
@@ -20,7 +20,13 @@ export default function PublicPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-gray-900">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/remax-family-color.png"
+          alt="RE/MAX Family"
+          className="mx-auto mb-6 h-16 w-auto"
+        />
+        <h1 className="text-4xl font-bold text-remax-navy">
           Encuentra tu propiedad ideal
         </h1>
         <p className="mt-2 text-lg text-gray-600">
@@ -62,6 +68,24 @@ export default function PublicPage() {
           <option value="LAND">Terreno</option>
         </select>
       </div>
+
+      {isLoading && (
+        <p className="py-10 text-center text-sm text-gray-500">
+          Cargando propiedades...
+        </p>
+      )}
+
+      {!isLoading && data && data.properties.length === 0 && (
+        <div className="rounded-xl border border-dashed bg-white py-16 text-center">
+          <Home className="mx-auto h-10 w-10 text-gray-300" />
+          <p className="mt-3 font-medium text-gray-900">
+            No hay propiedades publicadas todavía
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            Vuelve pronto, tenemos nuevas opciones.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {data?.properties.map((property) => (
